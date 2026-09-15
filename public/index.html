@@ -3,69 +3,65 @@
 
 <head>
 
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <meta
-    name="theme-color"
-    content="#08080d"
-  >
+    <meta
+        name="theme-color"
+        content="#08080d"
+    >
 
-  <meta
-    name="description"
-    content="FutIPTV — Futebol e TV online"
-  >
+    <meta
+        name="description"
+        content="FutIPTV — Futebol e TV online"
+    >
 
-  <title>FutIPTV</title>
+    <title>FutIPTV</title>
 
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 
 </head>
 
 <body>
 
-  <!-- =========================
-       APP
-  ========================== -->
-
-  <main class="app">
+<main class="app">
 
     <!-- HEADER -->
 
     <header class="topbar">
 
-      <div class="brand">
+        <div class="brand">
 
-        <div class="brand-icon">
-          ⚽
+            <div class="brand-icon">
+                ⚽
+            </div>
+
+            <div>
+
+                <h1>FutIPTV</h1>
+
+                <span>
+                    Futebol e TV
+                </span>
+
+            </div>
+
         </div>
 
-        <div>
-
-          <h1>FutIPTV</h1>
-
-          <span>
-            Futebol e TV
-          </span>
-
-        </div>
-
-      </div>
-
-      <button
-        id="refreshBtn"
-        class="icon-button"
-        aria-label="Atualizar canais"
-      >
-        ↻
-      </button>
+        <button
+            id="refreshBtn"
+            class="icon-button"
+            aria-label="Atualizar canais"
+        >
+            ↻
+        </button>
 
     </header>
 
@@ -74,20 +70,20 @@
 
     <section class="search-area">
 
-      <div class="search-box">
+        <div class="search-box">
 
-        <span class="search-icon">
-          🔍
-        </span>
+            <span class="search-icon">
+                🔍
+            </span>
 
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Pesquisar canal..."
-          autocomplete="off"
-        >
+            <input
+                id="searchInput"
+                type="search"
+                placeholder="Pesquisar canal..."
+                autocomplete="off"
+            >
 
-      </div>
+        </div>
 
     </section>
 
@@ -95,16 +91,16 @@
     <!-- CATEGORIAS -->
 
     <nav
-      id="categories"
-      class="categories"
+        id="categories"
+        class="categories"
     >
 
-      <button
-        class="category active"
-        data-category="Todos"
-      >
-        Todos
-      </button>
+        <button
+            class="category active"
+            data-category="Todos"
+        >
+            Todos
+        </button>
 
     </nav>
 
@@ -112,42 +108,43 @@
     <!-- PLAYER -->
 
     <section
-      id="playerSection"
-      class="player-section hidden"
+        id="playerSection"
+        class="player-section hidden"
     >
 
-      <div class="player-container">
+        <div class="player-container">
 
-        <video
-          id="videoPlayer"
-          controls
-          playsinline
-        ></video>
-
-      </div>
-
-      <div class="player-info">
-
-        <div>
-
-          <span class="player-label">
-            REPRODUZINDO
-          </span>
-
-          <h2 id="playerTitle">
-            Nenhum canal
-          </h2>
+            <video
+                id="videoPlayer"
+                controls
+                playsinline
+            ></video>
 
         </div>
 
-        <button
-          id="closePlayer"
-          class="close-player"
-        >
-          ✕
-        </button>
+        <div class="player-info">
 
-      </div>
+            <div>
+
+                <span class="player-label">
+                    REPRODUZINDO
+                </span>
+
+                <h2 id="playerTitle">
+                    Nenhum canal
+                </h2>
+
+            </div>
+
+            <button
+                id="closePlayer"
+                class="close-player"
+                type="button"
+            >
+                ✕
+            </button>
+
+        </div>
 
     </section>
 
@@ -155,10 +152,10 @@
     <!-- STATUS -->
 
     <div
-      id="status"
-      class="status"
+        id="status"
+        class="status"
     >
-      Carregando canais...
+        📥 Carregando canais...
     </div>
 
 
@@ -166,26 +163,27 @@
 
     <section>
 
-      <div class="section-header">
+        <div class="section-header">
 
-        <h2>
-          Canais
-        </h2>
+            <h2>
+                Canais
+            </h2>
 
-        <span id="channelCount">
-          0 canais
-        </span>
+            <span id="channelCount">
+                0 canais
+            </span>
 
-      </div>
+        </div>
 
-      <div
-        id="canais"
-        class="channels-grid"
-      >
 
-        <!-- Canais serão adicionados pelo JavaScript -->
+        <div
+            id="canais"
+            class="channels-grid"
+        >
 
-      </div>
+            <!-- JavaScript coloca os canais aqui -->
+
+        </div>
 
     </section>
 
@@ -193,15 +191,15 @@
     <!-- LOADING -->
 
     <div
-      id="loading"
-      class="loading"
+        id="loading"
+        class="loading"
     >
 
-      <div class="loader"></div>
+        <div class="loader"></div>
 
-      <p>
-        Carregando canais...
-      </p>
+        <p>
+            Carregando canais...
+        </p>
 
     </div>
 
@@ -209,32 +207,38 @@
     <!-- EMPTY -->
 
     <div
-      id="emptyState"
-      class="empty-state hidden"
+        id="emptyState"
+        class="empty-state hidden"
     >
 
-      <div class="empty-icon">
-        📺
-      </div>
+        <div class="empty-icon">
+            📺
+        </div>
 
-      <h2>
-        Nenhum canal encontrado
-      </h2>
+        <h2>
+            Nenhum canal encontrado
+        </h2>
 
-      <p>
-        Tente pesquisar outro canal.
-      </p>
+        <p>
+            Tente pesquisar outro canal.
+        </p>
 
     </div>
 
-  </main>
+</main>
 
 
-  <!-- =========================
-       JAVASCRIPT
-  ========================== -->
+<!-- HLS.JS -->
 
-    <script src="app.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"
+></script>
+
+
+<!-- APP -->
+
+<script src="app.js?v=3"></script>
 
 </body>
+
 </html>
