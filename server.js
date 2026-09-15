@@ -1,50 +1,147 @@
 import express from "express";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/*
+ * =========================================================
+ * CONFIGURAÇÃO
+ * =========================================================
+ */
 
-// Site
-app.use(express.static(path.join(__dirname, "public")));
+const PLAYLIST_URL =
+  "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
 
-// API de status
-app.get("/api/status", (req, res) => {
-  res.json({
-    success: true,
-    app: "FutIPTV",
-    version: "1.0.0",
-    status: "online"
-  });
-});
 
-// API da playlist
-app.get("/api/playlist", async (req, res) => {
-  try {
-    const playlistPath = path.join(__dirname, "sports.m3u");
+/*
+ * =========================================================
+ * SITE
+ * =========================================================
+ */
 
-    const playlist = await fs.readFile(
-      playlistPath,
-      "utf8"
-    );
+app.use(
+  express.static("public")
+);
 
-    res.type("text/plain").send(playlist);
 
-  } catch (error) {
+/*
+ * =========================================================
+ * API DE STATUS
+ * =========================================================
+ */
 
-    res.status(500).json({
-      success: false,
-      error: "Não foi possível carregar sports.m3u"
+app.get(
+  "/api/status",
+  (req, res) => {
+
+    res.json({
+
+      success: true,
+
+      app: "FutIPTV",
+
+      version: "1.0.0",
+
+      status: "online",
+
+      playlist:
+        "Free-TV/IPTV"
+
     });
 
   }
-});
+);
 
-app.listen(PORT, () => {
-  console.log(`FutIPTV rodando na porta ${PORT}`);
-});
+
+/*
+ * =========================================================
+ * API DA PLAYLIST
+ * =========================================================
+ */
+
+app.get(
+  "/api/playlist",
+  async (req, res) => {
+
+    try {
+
+      console.log(
+        "Baixando playlist Free-TV..."
+      );
+
+
+      const response =
+        await fetch(
+          PLAYLIST_URL
+        );
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          `HTTP ${response.status}`
+        );
+
+      }
+
+
+      const playlist =
+        await response.text();
+
+
+      console.log(
+        `Playlist carregada: ${playlist.length} caracteres`
+      );
+
+
+      /*
+       * Envia a playlist para o FutIPTV
+       */
+
+      res
+        .type("text/plain")
+        .send(playlist);
+
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Erro ao carregar playlist:",
+        error
+      );
+
+
+      res.status(500).json({
+
+        success: false,
+
+        error:
+          "Não foi possível carregar a playlist Free-TV/IPTV"
+
+      });
+
+    }
+
+  }
+);
+
+
+/*
+ * =========================================================
+ * SERVIDOR
+ * =========================================================
+ */
+
+app.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `FutIPTV rodando na porta ${PORT}`
+    );
+
+  }
+);
