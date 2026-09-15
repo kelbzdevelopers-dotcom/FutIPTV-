@@ -9,6 +9,8 @@
 # ============================================================
 # 🇧🇷 FUTEBOL BRASIL — HLS PÚBLICO
 # ============================================================
+#EXTINF:-1 tvg-id="TVE" tvg-name="TV É-Paraná" tvg-logo="" group-title="🇧🇷 TV Aberta",TV É-Paraná
+http://200.189.113.201/hls/tve.m3u8
 
 #EXTINF:-1 tvg-name="CazeTV" tvg-logo="" group-title="🇧🇷 Futebol Brasil",CazeTV
 https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8
