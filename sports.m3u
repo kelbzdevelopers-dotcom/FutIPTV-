@@ -1,43 +1,90 @@
 #EXTM3U
 
-# ==========================================
-# 🇧🇷 FUTEBOL BRASIL
-# ==========================================
+==========================================
 
-# CazéTV — transmissão pública, disponibilidade pode variar
-# Observação: stream pode ter bloqueio geográfico.
-#EXTINF:-1 tvg-id="CazeTV.br" group-title="🇧🇷 Futebol Brasil",CazéTV
+🇧🇷 FUTEBOL BRASIL
+
+==========================================
+
+CazéTV — stream público
+
+#EXTINF:-1 tvg-logo="" group-title="🇧🇷 Futebol Brasil",CazéTV
 https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8
 
-# FIFA+ Português — conteúdo de futebol gratuito
-#EXTINF:-1 tvg-id="FIFAPlus.uk@Portuguese" group-title="🇧🇷 Futebol Brasil",FIFA+ Português
-https://e3be9ac5.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctYnJfRklGQVBsdXNQb3J0dWd1ZXNlX0hMUw/playlist.m3u8
+FIFA+ Brasil — Português
 
+#EXTINF:-1 tvg-logo="" group-title="🇧🇷 Futebol Brasil",FIFA+ Brasil
+https://e3be9ac5.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctYnJfRklGQVBsd3J0dWd1ZXNlX0hMUw/playlist.m3u8
 
-# ==========================================
-# 🌎 FUTEBOL INTERNACIONAL
-# ==========================================
+==========================================
 
-# FIFA+
-#EXTINF:-1 tvg-id="FIFAPlus" group-title="🌎 Futebol Internacional",FIFA+ English
+🌎 FUTEBOL INTERNACIONAL
+
+==========================================
+
+FIFA+ English
+
+#EXTINF:-1 tvg-logo="" group-title="🌎 Futebol Internacional",FIFA+ English
 https://a62dad94.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0ZJRkFQbHVzRW5nbGlzaF9ITFM/playlist.m3u8
 
-# FIFA+ Women
-#EXTINF:-1 group-title="🌎 Futebol Internacional",FIFA+ Women
+FIFA+ Women
+
+#EXTINF:-1 tvg-logo="" group-title="🌎 Futebol Internacional",FIFA+ Women
 https://cffda8ff.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/U2Ftc3VuZy1nYl9GSUZBUGx1c3dvbWVuX0hMUw/playlist.m3u8
 
-# Teledeporte — Espanha
-#EXTINF:-1 group-title="🌎 Futebol Internacional",Teledeporte
-https://d1cctoeg0n48w5.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-mnixw9wn5ugmv/TeledeporteES.m3u8
+==========================================
 
-# Esport3 — Catalunha
-#EXTINF:-1 group-title="🌎 Futebol Internacional",Esport3
-https://directes-tv-int.3catdirectes.cat/live-content/esport3-hls/master.m3u8
+🏎️ ESPORTES
 
-# L'Équipe — França
-#EXTINF:-1 group-title="🌎 Futebol Internacional",L'Équipe
-https://dshn8inoshngm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-gac2i63dmu8b7/LEquipe_FR.m3u8
+==========================================
 
-# San Marino RTV Sport
-#EXTINF:-1 group-title="🌎 Futebol Internacional",San Marino RTV Sport
-https://d2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5bw6tg2e2hrvno5
+Red Bull TV
+
+#EXTINF:-1 tvg-logo="" group-title="🏎️ Esportes",Red Bull TV
+https://redbull-samsunguk.amagi.tv/playlist.m3u8
+
+Motorsport.tv
+
+#EXTINF:-1 tvg-logo="" group-title="🏎️ Esportes",Motorsport.tv
+https://motorsport-event.amagi.tv/playlist.m3u8
+
+==========================================
+
+🔒 SERVIÇOS OFICIAIS
+
+==========================================
+
+Estes itens abrem o serviço oficial.
+
+Não são streams HLS gratuitos.
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 2
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 3
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 4
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 5
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 6
+https://globoplay.globo.com/canais/sportv-us/
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",sportv 7
+https://globoplay.globo.com/canais/sportv-us/
+
+Premiere
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",Premiere
+https://globoplay.globo.com/canais/premiere/
+
+Globoplay
+
+#EXTINF:-1 tvg-logo="" group-title="🔒 Serviços Oficiais",Globoplay
+https://globoplay.globo.com/
