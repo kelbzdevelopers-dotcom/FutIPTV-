@@ -2,18 +2,6 @@
  * =========================================================
  * FUTIPTV v1.0
  * =========================================================
- *
- * Compatível com o index.html enviado.
- *
- * O frontend busca:
- *
- * /api/playlist
- *
- * O server.js pode buscar:
- *
- * https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
- *
- * =========================================================
  */
 
 
@@ -69,55 +57,6 @@ let favorites =
 
 
 /* =========================================================
-   PALAVRAS DE ESPORTE
-   ========================================================= */
-
-const SPORTS_KEYWORDS = [
-
-    "sport",
-    "sports",
-
-    "esporte",
-    "esportes",
-
-    "futebol",
-    "football",
-    "soccer",
-
-    "fifa",
-    "uefa",
-
-    "champions",
-    "champions league",
-
-    "premier league",
-
-    "laliga",
-    "la liga",
-
-    "bundesliga",
-
-    "serie a",
-    "serie b",
-
-    "copa",
-
-    "espn",
-
-    "fox sports",
-
-    "bein sports",
-
-    "sportv",
-
-    "tnt sports",
-
-    "red bull tv"
-
-];
-
-
-/* =========================================================
    CARREGAR PLAYLIST
    ========================================================= */
 
@@ -135,11 +74,6 @@ async function loadPlaylist() {
 
 
     try {
-
-        /*
-         * O server.js deve retornar
-         * a playlist M3U.
-         */
 
         const response =
             await fetch(
@@ -165,21 +99,15 @@ async function loadPlaylist() {
 
 
         /*
-         * Converte M3U para objetos.
-         */
-
-        const allChannels =
-            parseM3U(text);
-
-
-        /*
-         * Filtra esportes.
+         * O servidor já entrega
+         * somente os canais filtrados.
+         *
+         * Portanto, o celular não
+         * precisa filtrar novamente.
          */
 
         channels =
-            allChannels.filter(
-                isSportsChannel
-            );
+            parseM3U(text);
 
 
         /*
@@ -276,31 +204,6 @@ async function loadPlaylist() {
         `;
 
     }
-
-}
-
-
-/* =========================================================
-   VERIFICAR SE É ESPORTE
-   ========================================================= */
-
-function isSportsChannel(channel) {
-
-    const text = (
-
-        (channel.name || "") +
-        " " +
-        (channel.category || "")
-
-    ).toLowerCase();
-
-
-    return SPORTS_KEYWORDS.some(
-        keyword =>
-            text.includes(
-                keyword.toLowerCase()
-            )
-    );
 
 }
 
