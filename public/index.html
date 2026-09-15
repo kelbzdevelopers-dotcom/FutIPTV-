@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -9,18 +10,229 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <meta
+    name="theme-color"
+    content="#08080d"
+  >
+
+  <meta
+    name="description"
+    content="FutIPTV — Futebol e TV online"
+  >
+
   <title>FutIPTV</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
 </head>
 
 <body>
 
-  <h1>⚽ FutIPTV</h1>
+  <!-- =========================
+       APP
+  ========================== -->
 
-  <p id="status">
-    Carregando...
-  </p>
+  <main class="app">
 
-  <div id="canais"></div>
+    <!-- HEADER -->
+
+    <header class="topbar">
+
+      <div class="brand">
+
+        <div class="brand-icon">
+          ⚽
+        </div>
+
+        <div>
+
+          <h1>FutIPTV</h1>
+
+          <span>
+            Futebol e TV
+          </span>
+
+        </div>
+
+      </div>
+
+      <button
+        id="refreshBtn"
+        class="icon-button"
+        aria-label="Atualizar canais"
+      >
+        ↻
+      </button>
+
+    </header>
+
+
+    <!-- BUSCA -->
+
+    <section class="search-area">
+
+      <div class="search-box">
+
+        <span class="search-icon">
+          🔍
+        </span>
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Pesquisar canal..."
+          autocomplete="off"
+        >
+
+      </div>
+
+    </section>
+
+
+    <!-- CATEGORIAS -->
+
+    <nav
+      id="categories"
+      class="categories"
+    >
+
+      <button
+        class="category active"
+        data-category="Todos"
+      >
+        Todos
+      </button>
+
+    </nav>
+
+
+    <!-- PLAYER -->
+
+    <section
+      id="playerSection"
+      class="player-section hidden"
+    >
+
+      <div class="player-container">
+
+        <video
+          id="videoPlayer"
+          controls
+          playsinline
+        ></video>
+
+      </div>
+
+      <div class="player-info">
+
+        <div>
+
+          <span class="player-label">
+            REPRODUZINDO
+          </span>
+
+          <h2 id="playerTitle">
+            Nenhum canal
+          </h2>
+
+        </div>
+
+        <button
+          id="closePlayer"
+          class="close-player"
+        >
+          ✕
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="status"
+    >
+      Carregando canais...
+    </div>
+
+
+    <!-- CANAIS -->
+
+    <section>
+
+      <div class="section-header">
+
+        <h2>
+          Canais
+        </h2>
+
+        <span id="channelCount">
+          0 canais
+        </span>
+
+      </div>
+
+      <div
+        id="canais"
+        class="channels-grid"
+      >
+
+        <!-- Canais serão adicionados pelo JavaScript -->
+
+      </div>
+
+    </section>
+
+
+    <!-- LOADING -->
+
+    <div
+      id="loading"
+      class="loading"
+    >
+
+      <div class="loader"></div>
+
+      <p>
+        Carregando canais...
+      </p>
+
+    </div>
+
+
+    <!-- EMPTY -->
+
+    <div
+      id="emptyState"
+      class="empty-state hidden"
+    >
+
+      <div class="empty-icon">
+        📺
+      </div>
+
+      <h2>
+        Nenhum canal encontrado
+      </h2>
+
+      <p>
+        Tente pesquisar outro canal.
+      </p>
+
+    </div>
+
+  </main>
+
+
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
 
   <script src="app.js"></script>
 
