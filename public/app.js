@@ -99,11 +99,8 @@ async function loadPlaylist() {
 
 
         /*
-         * O servidor já entrega
-         * somente os canais filtrados.
-         *
-         * Portanto, o celular não
-         * precisa filtrar novamente.
+         * O servidor já filtra os canais.
+         * O celular apenas interpreta a M3U.
          */
 
         channels =
@@ -152,14 +149,14 @@ async function loadPlaylist() {
         if (!channels.length) {
 
             throw new Error(
-                "Nenhum canal esportivo encontrado"
+                "Nenhum canal encontrado"
             );
 
         }
 
 
         status.textContent =
-            `⚽ ${channels.length} canais esportivos disponíveis`;
+            `⚽ ${channels.length} canais disponíveis`;
 
 
         renderChannels();
@@ -233,13 +230,18 @@ function parseM3U(text) {
 
 
         /*
-         * Informações do canal
+         * Aceita diferentes formatos:
+         *
+         * #EXTINF:
+         * #EXTINF: 
+         * #EXTINF:-1
+         * #EXTINF: -1
          */
 
         if (
-            line.startsWith(
-                "#EXTINF:"
-            )
+            line
+                .toUpperCase()
+                .startsWith("#EXTINF")
         ) {
 
             const nameMatch =
@@ -250,13 +252,13 @@ function parseM3U(text) {
 
             const logoMatch =
                 line.match(
-                    /tvg-logo="([^"]*)"/i
+                    /tvg-logo\s*=\s*"([^"]*)"/i
                 );
 
 
             const groupMatch =
                 line.match(
-                    /group-title="([^"]*)"/i
+                    /group-title\s*=\s*"([^"]*)"/i
                 );
 
 
@@ -284,14 +286,17 @@ function parseM3U(text) {
 
             };
 
+
+            continue;
+
         }
 
 
         /*
-         * URL
+         * URL do canal
          */
 
-        else if (
+        if (
 
             line &&
             !line.startsWith("#") &&
@@ -315,6 +320,12 @@ function parseM3U(text) {
     }
 
 
+    console.log(
+        "FutIPTV: canais encontrados:",
+        result.length
+    );
+
+
     return result;
 
 }
@@ -329,10 +340,6 @@ function renderChannels() {
     let list =
         [...channels];
 
-
-    /*
-     * FAVORITOS
-     */
 
     if (
         currentTab ===
@@ -349,10 +356,6 @@ function renderChannels() {
 
     }
 
-
-    /*
-     * PESQUISA
-     */
 
     const search =
         searchInput.value
@@ -385,10 +388,6 @@ function renderChannels() {
     }
 
 
-    /*
-     * NENHUM RESULTADO
-     */
-
     if (!list.length) {
 
         channelList.innerHTML = `
@@ -413,10 +412,6 @@ function renderChannels() {
 
     }
 
-
-    /*
-     * AGRUPAR CATEGORIAS
-     */
 
     const groups = {};
 
@@ -450,10 +445,6 @@ function renderChannels() {
     channelList.innerHTML =
         "";
 
-
-    /*
-     * CRIAR GRUPOS
-     */
 
     Object
         .keys(groups)
@@ -595,10 +586,6 @@ function createChannelElement(
     `;
 
 
-    /*
-     * Abrir canal
-     */
-
     element.addEventListener(
         "click",
         () => {
@@ -610,10 +597,6 @@ function createChannelElement(
         }
     );
 
-
-    /*
-     * Favorito
-     */
 
     const favoriteButton =
         element.querySelector(
@@ -704,10 +687,6 @@ function playChannel(channel) {
         channel;
 
 
-    /*
-     * Esconde placeholder
-     */
-
     playerPlaceholder.style.display =
         "none";
 
@@ -716,18 +695,10 @@ function playChannel(channel) {
         "block";
 
 
-    /*
-     * Nome do canal
-     */
-
     nowPlaying.textContent =
         "▶️ " +
         channel.name;
 
-
-    /*
-     * Destruir HLS anterior
-     */
 
     if (hls) {
 
@@ -746,10 +717,6 @@ function playChannel(channel) {
 
     video.load();
 
-
-    /*
-     * HLS.js
-     */
 
     if (
         typeof Hls !== "undefined" &&
@@ -823,10 +790,6 @@ function playChannel(channel) {
     }
 
 
-    /*
-     * HLS nativo
-     */
-
     else if (
 
         video.canPlayType(
@@ -855,10 +818,6 @@ function playChannel(channel) {
 
     }
 
-
-    /*
-     * Atualiza visual da lista
-     */
 
     renderChannels();
 
@@ -967,7 +926,7 @@ document
 
 
 /* =========================================================
-   DISPONIBILIZAR PARA BOTÃO "TENTAR NOVAMENTE"
+   BOTÃO TENTAR NOVAMENTE
    ========================================================= */
 
 window.loadPlaylist =
