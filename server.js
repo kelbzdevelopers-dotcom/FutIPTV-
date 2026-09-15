@@ -4,20 +4,12 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-/*
- * =========================================================
- * CONFIGURAÇÃO
- * =========================================================
- */
-
 const PLAYLIST_URL =
   "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
 
 
 /*
- * =========================================================
- * SITE
- * =========================================================
+ * Site
  */
 
 app.use(
@@ -26,9 +18,7 @@ app.use(
 
 
 /*
- * =========================================================
- * API DE STATUS
- * =========================================================
+ * Status
  */
 
 app.get(
@@ -45,8 +35,7 @@ app.get(
 
       status: "online",
 
-      playlist:
-        "Free-TV/IPTV"
+      playlist: "Free-TV/IPTV"
 
     });
 
@@ -55,9 +44,7 @@ app.get(
 
 
 /*
- * =========================================================
- * API DA PLAYLIST
- * =========================================================
+ * Playlist filtrada
  */
 
 app.get(
@@ -67,7 +54,7 @@ app.get(
     try {
 
       console.log(
-        "Baixando playlist Free-TV..."
+        "Baixando playlist..."
       );
 
 
@@ -86,30 +73,228 @@ app.get(
       }
 
 
-      const playlist =
+      const text =
         await response.text();
 
 
       console.log(
-        `Playlist carregada: ${playlist.length} caracteres`
+        "Playlist baixada."
       );
 
 
       /*
-       * Envia a playlist para o FutIPTV
+       * Palavras relacionadas
+       * a futebol e esportes.
+       */
+
+      const keywords = [
+
+        "sport",
+        "sports",
+
+        "esporte",
+        "esportes",
+
+        "futebol",
+        "football",
+        "soccer",
+
+        "fifa",
+        "uefa",
+
+        "champions",
+
+        "premier league",
+
+        "laliga",
+        "la liga",
+
+        "bundesliga",
+
+        "serie a",
+        "serie b",
+
+        "copa",
+
+        "espn",
+
+        "fox sports",
+
+        "bein sports",
+
+        "sportv",
+
+        "tnt sports",
+
+        "red bull tv"
+
+      ];
+
+
+      /*
+       * Divide a playlist
+       */
+
+      const lines =
+        text.split(/\r?\n/);
+
+
+      const result = [];
+
+
+      let currentBlock = [];
+
+
+      /*
+       * Processa cada canal
+       */
+
+      for (
+        const line of lines
+      ) {
+
+        /*
+         * Começo de um canal
+         */
+
+        if (
+          line.startsWith(
+            "#EXTINF:"
+          )
+        ) {
+
+          /*
+           * Se já havia um canal
+           * armazenado, verifica ele.
+           */
+
+          if (
+            currentBlock.length
+          ) {
+
+            const blockText =
+              currentBlock
+                .join("\n")
+                .toLowerCase();
+
+
+            const isSport =
+              keywords.some(
+                keyword =>
+                  blockText.includes(
+                    keyword
+                  )
+              );
+
+
+            if (isSport) {
+
+              result.push(
+                ...currentBlock
+              );
+
+            }
+
+          }
+
+
+          /*
+           * Começa novo canal
+           */
+
+          currentBlock = [
+            line
+          ];
+
+        }
+
+        else {
+
+          /*
+           * Continua o canal atual
+           */
+
+          if (
+            currentBlock.length
+          ) {
+
+            currentBlock.push(
+              line
+            );
+
+          }
+
+        }
+
+      }
+
+
+      /*
+       * Processa último canal
+       */
+
+      if (
+        currentBlock.length
+      ) {
+
+        const blockText =
+          currentBlock
+            .join("\n")
+            .toLowerCase();
+
+
+        const isSport =
+          keywords.some(
+            keyword =>
+              blockText.includes(
+                keyword
+              )
+          );
+
+
+        if (isSport) {
+
+          result.push(
+            ...currentBlock
+          );
+
+        }
+
+      }
+
+
+      /*
+       * Monta playlist final
+       */
+
+      const filteredPlaylist =
+        "#EXTM3U\n" +
+        result.join("\n");
+
+
+      console.log(
+        `Playlist filtrada: ${result.length} linhas`
+      );
+
+
+      /*
+       * Envia somente os canais
+       * esportivos.
        */
 
       res
         .type("text/plain")
-        .send(playlist);
-
+        .send(
+          filteredPlaylist
+        );
 
     }
+
 
     catch (error) {
 
       console.error(
-        "Erro ao carregar playlist:",
+        "Erro:",
         error
       );
 
@@ -119,7 +304,7 @@ app.get(
         success: false,
 
         error:
-          "Não foi possível carregar a playlist Free-TV/IPTV"
+          "Não foi possível carregar a playlist"
 
       });
 
@@ -130,9 +315,7 @@ app.get(
 
 
 /*
- * =========================================================
- * SERVIDOR
- * =========================================================
+ * Servidor
  */
 
 app.listen(
