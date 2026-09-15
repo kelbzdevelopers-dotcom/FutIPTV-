@@ -1,9 +1,10 @@
-const video = document.getElementById("video");
-const channelList = document.getElementById("channelList");
-const status = document.getElementById("status");
-const searchInput = document.getElementById("searchInput");
-const reloadBtn = document.getElementById("reloadBtn");
-const nowPlaying = document.getElementById("nowPlaying");
+const video = document.getElementById("videoPlayer");
+const channelList = document.getElementById("canais");
+const reloadBtn = document.getElementById("refreshBtn");
+const nowPlaying = document.getElementById("playerTitle");
+const channelCount = document.getElementById("channelCount");
+const loading = document.getElementById("loading");
+const emptyState = document.getElementById("emptyState");
 
 let channels = [];
 let favorites = JSON.parse(
