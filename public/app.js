@@ -98,13 +98,21 @@ async function loadPlaylist() {
             await response.text();
 
 
-        /*
-         * O servidor já filtra os canais.
-         * O celular apenas interpreta a M3U.
-         */
+        console.log(
+            "FutIPTV: playlist recebida:",
+            text.length,
+            "caracteres"
+        );
+
 
         channels =
             parseM3U(text);
+
+
+        console.log(
+            "FutIPTV: canais encontrados:",
+            channels.length
+        );
 
 
         /*
@@ -149,25 +157,25 @@ async function loadPlaylist() {
         if (!channels.length) {
 
             throw new Error(
-                "Nenhum canal encontrado"
+                "Nenhum canal encontrado na playlist"
             );
 
         }
 
 
         status.textContent =
-            `⚽ ${channels.length} canais disponíveis`;
+            `⚽ ${channels.length} canais`;
 
 
         renderChannels();
 
-
     }
+
 
     catch (error) {
 
         console.error(
-            "Erro ao carregar playlist:",
+            "FutIPTV:",
             error
         );
 
@@ -185,8 +193,9 @@ async function loadPlaylist() {
                 </h3>
 
                 <p>
-                    Verifique se o servidor está funcionando
-                    e se /api/playlist está disponível.
+                    ${escapeHTML(
+                        error.message
+                    )}
                 </p>
 
                 <button
@@ -230,12 +239,7 @@ function parseM3U(text) {
 
 
         /*
-         * Aceita diferentes formatos:
-         *
-         * #EXTINF:
-         * #EXTINF: 
-         * #EXTINF:-1
-         * #EXTINF: -1
+         * Detecta qualquer #EXTINF
          */
 
         if (
@@ -244,11 +248,36 @@ function parseM3U(text) {
                 .startsWith("#EXTINF")
         ) {
 
-            const nameMatch =
-                line.match(
-                    /,(.+)$/
-                );
 
+            /*
+             * Nome depois da última vírgula.
+             */
+
+            const comma =
+                line.lastIndexOf(",");
+
+
+            let name =
+                "Canal";
+
+
+            if (
+                comma !== -1
+            ) {
+
+                name =
+                    line
+                        .substring(
+                            comma + 1
+                        )
+                        .trim();
+
+            }
+
+
+            /*
+             * Logo
+             */
 
             const logoMatch =
                 line.match(
@@ -256,9 +285,23 @@ function parseM3U(text) {
                 );
 
 
+            /*
+             * Categoria
+             */
+
             const groupMatch =
                 line.match(
                     /group-title\s*=\s*"([^"]*)"/i
+                );
+
+
+            /*
+             * Nome oficial do M3U
+             */
+
+            const tvgNameMatch =
+                line.match(
+                    /tvg-name\s*=\s*"([^"]*)"/i
                 );
 
 
@@ -268,9 +311,11 @@ function parseM3U(text) {
                     result.length + 1,
 
                 name:
-                    nameMatch
-                        ? nameMatch[1].trim()
-                        : "Canal",
+                    name || (
+                        tvgNameMatch
+                            ? tvgNameMatch[1]
+                            : "Canal"
+                    ),
 
                 logo:
                     logoMatch
@@ -293,14 +338,14 @@ function parseM3U(text) {
 
 
         /*
-         * URL do canal
+         * Encontrou a URL
          */
 
         if (
 
+            current &&
             line &&
-            !line.startsWith("#") &&
-            current
+            !line.startsWith("#")
 
         ) {
 
@@ -321,8 +366,9 @@ function parseM3U(text) {
 
 
     console.log(
-        "FutIPTV: canais encontrados:",
-        result.length
+        "FutIPTV parser:",
+        result.length,
+        "canais"
     );
 
 
@@ -873,7 +919,7 @@ searchInput.addEventListener(
 
 
 /* =========================================================
-   BOTÃO ATUALIZAR
+   ATUALIZAR
    ========================================================= */
 
 reloadBtn.addEventListener(
@@ -926,7 +972,7 @@ document
 
 
 /* =========================================================
-   BOTÃO TENTAR NOVAMENTE
+   TENTAR NOVAMENTE
    ========================================================= */
 
 window.loadPlaylist =
