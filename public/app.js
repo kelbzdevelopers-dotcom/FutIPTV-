@@ -6,12 +6,26 @@ const channelCount = document.getElementById("channelCount");
 const loading = document.getElementById("loading");
 const emptyState = document.getElementById("emptyState");
 
+const status = document.getElementById("status");
+const searchInput = document.getElementById("searchInput");
+
+const playerSection =
+    document.getElementById("playerSection");
+
+const closePlayer =
+    document.getElementById("closePlayer");
+
+const categories =
+    document.getElementById("categories");
+
 let channels = [];
+
 let favorites = JSON.parse(
     localStorage.getItem("futiptv_favorites") || "[]"
 );
 
-let currentTab = "all";
+let currentCategory = "Todos";
+
 let hls = null;
 
 
@@ -37,12 +51,17 @@ async function loadPlaylist() {
 
     setStatus("📥 Carregando playlist...");
 
+    if (loading) {
+        loading.classList.remove("hidden");
+        loading.style.display = "";
+    }
+
+    if (emptyState) {
+        emptyState.classList.add("hidden");
+    }
+
     if (channelList) {
-        channelList.innerHTML = `
-            <div style="padding:20px;text-align:center">
-                📥 Carregando canais...
-            </div>
-        `;
+        channelList.innerHTML = "";
     }
 
     try {
@@ -84,11 +103,13 @@ async function loadPlaylist() {
             );
         }
 
+        buildCategories();
+
+        renderChannels();
+
         setStatus(
             "⚽ " + channels.length + " canais"
         );
-
-        renderChannels();
 
     } catch (error) {
 
@@ -98,20 +119,27 @@ async function loadPlaylist() {
             "❌ " + error.message
         );
 
+        if (loading) {
+            loading.style.display = "none";
+            loading.classList.add("hidden");
+        }
+
         if (channelList) {
 
             channelList.innerHTML = `
-                <div style="padding:20px;text-align:center">
+                <div style="
+                    padding:20px;
+                    text-align:center;
+                ">
                     ❌ Erro ao carregar canais.
                     <br><br>
-                    <small>${escapeHTML(error.message)}</small>
+                    <small>
+                        ${escapeHTML(error.message)}
+                    </small>
                 </div>
             `;
-
         }
-
     }
-
 }
 
 
@@ -137,7 +165,6 @@ function parseM3U(text) {
             continue;
         }
 
-
         if (
             line
                 .toUpperCase()
@@ -145,17 +172,11 @@ function parseM3U(text) {
         ) {
 
             current = {
-
                 name: "Canal",
-
                 logo: "",
-
-                group: "",
-
+                group: "Esportes",
                 url: ""
-
             };
-
 
             const comma =
                 line.lastIndexOf(",");
@@ -166,9 +187,7 @@ function parseM3U(text) {
                     line
                         .substring(comma + 1)
                         .trim();
-
             }
-
 
             const logo =
                 line.match(
@@ -176,10 +195,8 @@ function parseM3U(text) {
                 );
 
             if (logo) {
-                current.logo =
-                    logo[1];
+                current.logo = logo[1];
             }
-
 
             const group =
                 line.match(
@@ -187,13 +204,11 @@ function parseM3U(text) {
                 );
 
             if (group) {
-                current.group =
-                    group[1];
+                current.group = group[1];
             }
 
             continue;
         }
-
 
         if (
             current &&
@@ -209,17 +224,93 @@ function parseM3U(text) {
                 current.url = line;
 
                 result.push(current);
-
             }
 
             current = null;
-
         }
-
     }
 
     return result;
+}
 
+
+/* =========================
+   CATEGORIAS
+========================= */
+
+function buildCategories() {
+
+    if (!categories) {
+        return;
+    }
+
+    categories.innerHTML = "";
+
+    addCategory(
+        "Todos",
+        true
+    );
+
+    const groups = [
+        ...new Set(
+            channels
+                .map(channel => channel.group)
+                .filter(Boolean)
+        )
+    ].sort();
+
+    groups
+        .slice(0, 20)
+        .forEach(group => {
+
+            addCategory(
+                group,
+                false
+            );
+
+        });
+}
+
+
+function addCategory(
+    name,
+    active
+) {
+
+    const button =
+        document.createElement("button");
+
+    button.className =
+        "category" +
+        (active ? " active" : "");
+
+    button.textContent = name;
+
+    button.dataset.category = name;
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            document
+                .querySelectorAll(".category")
+                .forEach(btn => {
+                    btn.classList.remove(
+                        "active"
+                    );
+                });
+
+            button.classList.add(
+                "active"
+            );
+
+            currentCategory = name;
+
+            renderChannels();
+        }
+    );
+
+    categories.appendChild(button);
 }
 
 
@@ -230,25 +321,17 @@ function parseM3U(text) {
 function renderChannels() {
 
     if (!channelList) {
-
-        console.error(
-            "ERRO: #channelList não existe no HTML"
-        );
-
         return;
-
     }
-
 
     const search =
         searchInput
-        ? searchInput.value
-            .toLowerCase()
-            .trim()
-        : "";
+            ? searchInput.value
+                .toLowerCase()
+                .trim()
+            : "";
 
-
-    let filtered =
+    const filtered =
         channels.filter(channel => {
 
             const name =
@@ -261,229 +344,261 @@ function renderChannels() {
                     channel.group || ""
                 ).toLowerCase();
 
-
             const matchesSearch =
                 !search ||
                 name.includes(search) ||
                 group.includes(search);
 
+            const matchesCategory =
+                currentCategory === "Todos" ||
+                channel.group === currentCategory;
 
-            if (!matchesSearch) {
-                return false;
-            }
-
-
-            if (
-                currentTab ===
-                "favorites"
-            ) {
-
-                return favorites.includes(
-                    channel.url
-                );
-
-            }
-
-
-            return true;
-
+            return (
+                matchesSearch &&
+                matchesCategory
+            );
         });
-
-
-    console.log(
-        "Renderizando:",
-        filtered.length,
-        "canais"
-    );
 
 
     channelList.innerHTML = "";
 
 
-    if (
-        filtered.length === 0
-    ) {
+    if (channelCount) {
 
-        channelList.innerHTML = `
-            <div style="padding:20px;text-align:center">
-                ⚠️ Nenhum canal encontrado.
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    filtered.forEach(
-        channel => {
-
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-
-            item.className =
-                "channel";
-
-
-            const isFavorite =
-                favorites.includes(
-                    channel.url
-                );
-
-
-            item.innerHTML = `
-
-                <div class="channel-logo">
-
-                    ${
-                        channel.logo
-                        ?
-                        `
-                        <img
-                            src="${escapeHTML(channel.logo)}"
-                            loading="lazy"
-                            onerror="
-                                this.style.display='none'
-                            "
-                        >
-                        `
-                        :
-                        "⚽"
-                    }
-
-                </div>
-
-
-                <div class="channel-info">
-
-                    <strong>
-                        ${escapeHTML(channel.name)}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(
-                            channel.group ||
-                            "Esportes"
-                        )}
-                    </small>
-
-                </div>
-
-
-                <button
-                    class="favorite"
-                    type="button"
-                >
-                    ${
-                        isFavorite
-                        ? "⭐"
-                        : "☆"
-                    }
-                </button>
-
-            `;
-
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    playChannel(
-                        channel
-                    );
-
-                }
-            );
-
-
-            const favoriteButton =
-                item.querySelector(
-                    ".favorite"
-                );
-
-
-            favoriteButton.addEventListener(
-                "click",
-                event => {
-
-                    event.stopPropagation();
-
-                    toggleFavorite(
-                        channel.url
-                    );
-
-                }
-            );
-
-
-            channelList.appendChild(
-                item
-            );
-
-        }
-    );
-
-
-    /* Atualiza contador */
-
-    const counter =
-        document.querySelector(
-            ".channel-count"
-        );
-
-    if (counter) {
-
-        counter.textContent =
+        channelCount.textContent =
             filtered.length +
             " canais";
-
     }
 
+
+    if (loading) {
+
+        loading.classList.add("hidden");
+
+        loading.style.display = "none";
+    }
+
+
+    if (filtered.length === 0) {
+
+        if (emptyState) {
+            emptyState.classList.remove(
+                "hidden"
+            );
+        }
+
+        return;
+    }
+
+
+    if (emptyState) {
+        emptyState.classList.add(
+            "hidden"
+        );
+    }
+
+
+    filtered.forEach(channel => {
+
+        const item =
+            document.createElement("div");
+
+        item.className = "channel";
+
+
+        const isFavorite =
+            favorites.includes(
+                channel.url
+            );
+
+
+        item.innerHTML = `
+
+            <div class="channel-logo">
+
+                ${
+                    channel.logo
+                    ?
+                    `
+                    <img
+                        src="${escapeHTML(channel.logo)}"
+                        loading="lazy"
+                        onerror="
+                            this.style.display='none'
+                        "
+                    >
+                    `
+                    :
+                    "⚽"
+                }
+
+            </div>
+
+            <div class="channel-info">
+
+                <strong>
+                    ${escapeHTML(channel.name)}
+                </strong>
+
+                <small>
+                    ${escapeHTML(
+                        channel.group ||
+                        "Esportes"
+                    )}
+                </small>
+
+            </div>
+
+            <button
+                class="favorite"
+                type="button"
+            >
+                ${
+                    isFavorite
+                    ? "⭐"
+                    : "☆"
+                }
+            </button>
+
+        `;
+
+
+        /* CLIQUE NO CARD */
+
+        item.addEventListener(
+            "click",
+            () => {
+
+                playChannel(channel);
+
+            }
+        );
+
+
+        /* FAVORITO */
+
+        const favoriteButton =
+            item.querySelector(
+                ".favorite"
+            );
+
+
+        favoriteButton.addEventListener(
+            "click",
+            event => {
+
+                event.stopPropagation();
+
+                toggleFavorite(
+                    channel.url
+                );
+            }
+        );
+
+
+        channelList.appendChild(
+            item
+        );
+
+    });
 }
 
 
 /* =========================
-   PLAYER
+   PLAYER HLS
 ========================= */
 
 function playChannel(channel) {
 
+    console.log(
+        "🎬 Abrindo:",
+        channel.name
+    );
+
+    console.log(
+        "🔗 URL:",
+        channel.url
+    );
+
+
     if (!video) {
+
+        console.error(
+            "videoPlayer não encontrado."
+        );
+
         return;
     }
 
+
+    /* MOSTRAR PLAYER */
+
+    if (playerSection) {
+
+        playerSection.classList.remove(
+            "hidden"
+        );
+
+        playerSection.style.display =
+            "block";
+
+    }
+
+
+    /* NOME DO CANAL */
+
+    if (nowPlaying) {
+
+        nowPlaying.textContent =
+            "▶ " + channel.name;
+    }
+
+
+    /* DESTRUIR HLS ANTERIOR */
 
     if (hls) {
 
         hls.destroy();
 
         hls = null;
-
     }
 
 
-    if (nowPlaying) {
+    /* LIMPAR VIDEO */
 
-        nowPlaying.textContent =
-            "▶ " + channel.name;
+    video.pause();
 
-    }
+    video.removeAttribute(
+        "src"
+    );
+
+    video.load();
 
 
     const url =
         channel.url;
 
 
+    /* =========================
+       HLS.JS
+    ========================= */
+
     if (
         window.Hls &&
         Hls.isSupported()
     ) {
 
+        console.log(
+            "HLS.js encontrado."
+        );
+
+
         hls =
-            new Hls();
+            new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 30
+            });
 
 
         hls.loadSource(
@@ -500,12 +615,20 @@ function playChannel(channel) {
             Hls.Events.MANIFEST_PARSED,
             () => {
 
+                console.log(
+                    "✅ HLS carregado!"
+                );
+
                 video
                     .play()
-                    .catch(
-                        () => {}
-                    );
+                    .catch(error => {
 
+                        console.log(
+                            "Autoplay bloqueado:",
+                            error
+                        );
+
+                    });
             }
         );
 
@@ -514,24 +637,59 @@ function playChannel(channel) {
             Hls.Events.ERROR,
             (event, data) => {
 
-                console.log(
-                    "Erro HLS:",
+                console.error(
+                    "❌ Erro HLS:",
                     data
                 );
 
+
+                if (data.fatal) {
+
+                    if (
+                        data.type ===
+                        Hls.ErrorTypes.NETWORK_ERROR
+                    ) {
+
+                        console.log(
+                            "🔄 Recuperando conexão..."
+                        );
+
+                        hls.startLoad();
+
+                    }
+
+                    else if (
+                        data.type ===
+                        Hls.ErrorTypes.MEDIA_ERROR
+                    ) {
+
+                        console.log(
+                            "🔄 Recuperando mídia..."
+                        );
+
+                        hls.recoverMediaError();
+
+                    }
+                }
             }
         );
 
+
+        return;
     }
 
-    else if (
+
+    /* =========================
+       HLS NATIVO
+    ========================= */
+
+    if (
         video.canPlayType(
             "application/vnd.apple.mpegurl"
         )
     ) {
 
-        video.src =
-            url;
+        video.src = url;
 
         video
             .play()
@@ -539,16 +697,57 @@ function playChannel(channel) {
                 () => {}
             );
 
+        return;
     }
 
-    else {
 
-        alert(
-            "Seu navegador não suporta este stream."
-        );
+    alert(
+        "Seu navegador não suporta HLS."
+    );
+}
 
-    }
 
+/* =========================
+   FECHAR PLAYER
+========================= */
+
+if (closePlayer) {
+
+    closePlayer.addEventListener(
+        "click",
+        () => {
+
+            if (hls) {
+
+                hls.destroy();
+
+                hls = null;
+            }
+
+
+            if (video) {
+
+                video.pause();
+
+                video.removeAttribute(
+                    "src"
+                );
+
+                video.load();
+            }
+
+
+            if (playerSection) {
+
+                playerSection.classList.add(
+                    "hidden"
+                );
+
+                playerSection.style.display =
+                    "none";
+            }
+        }
+    );
 }
 
 
@@ -568,12 +767,9 @@ function toggleFavorite(url) {
                     item !== url
             );
 
-    }
-
-    else {
+    } else {
 
         favorites.push(url);
-
     }
 
 
@@ -586,7 +782,6 @@ function toggleFavorite(url) {
 
 
     renderChannels();
-
 }
 
 
@@ -600,52 +795,11 @@ if (searchInput) {
         "input",
         renderChannels
     );
-
 }
 
 
 /* =========================
-   ABAS
-========================= */
-
-document
-    .querySelectorAll(".tab")
-    .forEach(tab => {
-
-        tab.addEventListener(
-            "click",
-            function() {
-
-                document
-                    .querySelectorAll(".tab")
-                    .forEach(
-                        t =>
-                            t.classList.remove(
-                                "active"
-                            )
-                    );
-
-
-                this.classList.add(
-                    "active"
-                );
-
-
-                currentTab =
-                    this.dataset.tab ||
-                    "all";
-
-
-                renderChannels();
-
-            }
-        );
-
-    });
-
-
-/* =========================
-   RELOAD
+   ATUALIZAR
 ========================= */
 
 if (reloadBtn) {
@@ -654,12 +808,11 @@ if (reloadBtn) {
         "click",
         loadPlaylist
     );
-
 }
 
 
 /* =========================
-   SEGURANÇA HTML
+   SEGURANÇA
 ========================= */
 
 function escapeHTML(text) {
@@ -690,7 +843,6 @@ function escapeHTML(text) {
             /'/g,
             "&#039;"
         );
-
 }
 
 
