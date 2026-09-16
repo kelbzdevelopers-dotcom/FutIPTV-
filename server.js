@@ -78,75 +78,11 @@ function isSports(text) {
     );
 }
 
-/*
- * Verifica se o stream responde.
- * Não baixa o vídeo inteiro.
- */
-async function streamWorks(url) {
-    try {
-        const controller = new AbortController();
-
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 5000);
-
-        const response = await fetch(url, {
-            method: "HEAD",
-            redirect: "follow",
-            signal: controller.signal
-        });
-
-        clearTimeout(timeout);
-
-        return response.ok;
-    } catch {
-        return false;
-    }
-}
-
-/*
- * Alguns servidores IPTV não aceitam HEAD.
- * Nesse caso fazemos uma pequena requisição GET.
- */
-async function streamWorksFallback(url) {
-    try {
-        const controller = new AbortController();
-
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 5000);
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                Range: "bytes=0-1024"
-            },
-            redirect: "follow",
-            signal: controller.signal
-        });
-
-        clearTimeout(timeout);
-
-        return response.ok || response.status === 206;
-    } catch {
-        return false;
-    }
-}
-
-async function checkStream(url) {
-    const headWorks = await streamWorks(url);
-
-    if (headWorks) {
-        return true;
-    }
-
-    return await streamWorksFallback(url);
-}
-
-function parsePlaylist(text) {
+function processPlaylist(text) {
     const lines = text.split(/\r?\n/);
 
-    const channels = [];
+    const brazilChannels = [];
+    const internationalChannels = [];
 
     let currentInfo = null;
 
@@ -165,9 +101,11 @@ function parsePlaylist(text) {
         ) {
             const url = line;
 
+            // Remove links claramente inválidos
             if (
                 url.includes("[NO PUBLIC STREAM]") ||
-                url.includes("example.com")
+                url.includes("example.com") ||
+                url === "-"
             ) {
                 currentInfo = null;
                 continue;
@@ -177,73 +115,33 @@ function parsePlaylist(text) {
             const sports = isSports(currentInfo);
 
             if (brazilian || sports) {
-                channels.push({
+                const channel = {
                     info: currentInfo,
-                    url,
-                    brazilian
-                });
+                    url
+                };
+
+                if (brazilian) {
+                    brazilChannels.push(channel);
+                } else {
+                    internationalChannels.push(channel);
+                }
             }
 
             currentInfo = null;
         }
     }
 
-    return channels;
-}
-
-async function filterWorkingChannels(channels) {
-    const working = [];
-
-    /*
-     * Testa em grupos de 5 para não sobrecarregar
-     * o servidor gratuito do Render.
-     */
-    const batchSize = 5;
-
-    for (let i = 0; i < channels.length; i += batchSize) {
-        const batch = channels.slice(i, i + batchSize);
-
-        const results = await Promise.all(
-            batch.map(async channel => ({
-                channel,
-                works: await checkStream(channel.url)
-            }))
-        );
-
-        for (const result of results) {
-            if (result.works) {
-                working.push(result.channel);
-            } else {
-                console.log(
-                    `❌ Stream quebrado: ${result.channel.url}`
-                );
-            }
-        }
-    }
-
-    return working;
-}
-
-function createPlaylist(channels) {
-    const brazil = channels.filter(channel =>
-        channel.brazilian
-    );
-
-    const international = channels.filter(channel =>
-        !channel.brazilian
-    );
-
-    const ordered = [
-        ...brazil,
-        ...international
+    const channels = [
+        ...brazilChannels,
+        ...internationalChannels
     ];
 
     let output = "#EXTM3U\n";
 
-    for (const channel of ordered) {
+    for (const channel of channels) {
         let info = channel.info;
 
-        if (channel.brazilian) {
+        if (isBrazilian(info)) {
             if (/group-title="[^"]*"/i.test(info)) {
                 info = info.replace(
                     /group-title="[^"]*"/i,
@@ -263,15 +161,15 @@ function createPlaylist(channels) {
 
     return {
         playlist: output,
-        total: ordered.length,
-        brazil: brazil.length,
-        international: international.length
+        total: channels.length,
+        brazil: brazilChannels.length,
+        international: internationalChannels.length
     };
 }
 
 app.get("/api/playlist", async (req, res) => {
     try {
-        console.log("📡 Baixando playlist original...");
+        console.log("📡 Baixando playlist...");
 
         const response = await fetch(PLAYLIST_URL);
 
@@ -283,22 +181,10 @@ app.get("/api/playlist", async (req, res) => {
 
         const text = await response.text();
 
-        const channels = parsePlaylist(text);
+        const result = processPlaylist(text);
 
         console.log(
-            `📺 ${channels.length} streams encontrados para teste`
-        );
-
-        console.log("🔎 Testando streams...");
-
-        const workingChannels =
-            await filterWorkingChannels(channels);
-
-        const result =
-            createPlaylist(workingChannels);
-
-        console.log(
-            `✅ ${result.total} canais funcionando`
+            `⚽ ${result.total} canais encontrados`
         );
 
         console.log(
@@ -309,16 +195,12 @@ app.get("/api/playlist", async (req, res) => {
             `🌎 Internacionais: ${result.international}`
         );
 
-        res.type("text/plain").send(
-            result.playlist
-        );
+        res.type("text/plain").send(result.playlist);
 
     } catch (error) {
         console.error("❌ Erro:", error);
 
-        res.status(500).send(
-            "#EXTM3U\n"
-        );
+        res.status(500).send("#EXTM3U\n");
     }
 });
 
@@ -328,7 +210,7 @@ app.get("/api/status", (req, res) => {
         app: "FutIPTV",
         version: "1.0.1",
         status: "online",
-        filter: "automatic-stream-check"
+        filter: "invalid-stream-filter"
     });
 });
 
@@ -336,4 +218,4 @@ app.listen(PORT, () => {
     console.log(
         `🚀 FutIPTV v1.0.1 rodando na porta ${PORT}`
     );
-});
+}); 
