@@ -4,8 +4,6 @@ const reloadBtn = document.getElementById("refreshBtn");
 const nowPlaying = document.getElementById("playerTitle");
 const channelCount = document.getElementById("channelCount");
 const loading = document.getElementById("loading");
-const emptyState = document.getElementById("emptyState");
-
 const status = document.getElementById("status");
 const searchInput = document.getElementById("searchInput");
 
@@ -25,12 +23,11 @@ let favorites = JSON.parse(
 );
 
 let currentCategory = "Todos";
-
-/* CORREÇÃO */
 let currentTab = "all";
 
 let hls = null;
-let loadingTimeout = null;
+let dash = null;
+let playerTimeout = null;
 
 
 /* =========================
@@ -48,12 +45,12 @@ function setStatus(text) {
 
 
 /* =========================
-   CARREGAR PLAYLIST
+   PLAYLIST
 ========================= */
 
 async function loadPlaylist() {
 
-    setStatus("📥 Carregando playlist...");
+    setStatus("📥 Carregando canais...");
 
     if (loading) {
         loading.style.display = "block";
@@ -71,35 +68,33 @@ async function loadPlaylist() {
             );
         }
 
-        const text = await response.text();
-
-        console.log(
-            "Playlist recebida:",
-            text.length,
-            "caracteres"
-        );
+        const text =
+            await response.text();
 
         if (!text.includes("#EXTINF")) {
             throw new Error(
-                "Nenhum #EXTINF encontrado."
+                "Nenhum canal encontrado."
             );
         }
 
-        channels = parseM3U(text);
+        channels =
+            parseM3U(text);
 
         console.log(
             "Canais encontrados:",
             channels.length
         );
 
-        if (channels.length === 0) {
+        if (!channels.length) {
             throw new Error(
-                "Nenhum canal válido encontrado."
+                "Nenhum canal válido."
             );
         }
 
         setStatus(
-            "⚽ " + channels.length + " canais"
+            "⚽ " +
+            channels.length +
+            " canais"
         );
 
         renderCategories();
@@ -110,7 +105,8 @@ async function loadPlaylist() {
         console.error(error);
 
         setStatus(
-            "❌ " + error.message
+            "❌ " +
+            error.message
         );
 
         if (channelList) {
@@ -123,7 +119,9 @@ async function loadPlaylist() {
                     ❌ Erro ao carregar canais.
                     <br><br>
                     <small>
-                        ${escapeHTML(error.message)}
+                        ${escapeHTML(
+                            error.message
+                        )}
                     </small>
                 </div>
             `;
@@ -184,7 +182,9 @@ function parseM3U(text) {
 
                 current.name =
                     line
-                        .substring(comma + 1)
+                        .substring(
+                            comma + 1
+                        )
                         .trim();
             }
 
@@ -195,7 +195,8 @@ function parseM3U(text) {
                 );
 
             if (logo) {
-                current.logo = logo[1];
+                current.logo =
+                    logo[1];
             }
 
 
@@ -205,7 +206,8 @@ function parseM3U(text) {
                 );
 
             if (group) {
-                current.group = group[1];
+                current.group =
+                    group[1];
             }
 
             continue;
@@ -223,9 +225,12 @@ function parseM3U(text) {
                 )
             ) {
 
-                current.url = line;
+                current.url =
+                    line;
 
-                result.push(current);
+                result.push(
+                    current
+                );
             }
 
             current = null;
@@ -247,84 +252,79 @@ function renderCategories() {
     const groups = [
         ...new Set(
             channels
-                .map(c => c.group)
+                .map(
+                    channel =>
+                        channel.group
+                )
                 .filter(Boolean)
         )
     ];
 
-    categories.innerHTML = `
-        <button
-            class="category ${
-                currentCategory === "Todos"
-                    ? "active"
-                    : ""
-            }"
-            data-category="Todos"
-        >
-            Todos
-        </button>
-    `;
+
+    categories.innerHTML = "";
 
 
-    groups.forEach(group => {
+    addCategoryButton(
+        "Todos"
+    );
 
-        const button =
-            document.createElement("button");
 
-        button.className =
-            "category" +
-            (
-                currentCategory === group
-                    ? " active"
-                    : ""
+    groups.forEach(
+        group => {
+
+            addCategoryButton(
+                group
             );
+        }
+    );
+}
 
-        button.dataset.category =
-            group;
 
-        button.textContent =
-            group;
+function addCategoryButton(
+    name
+) {
 
-        button.addEventListener(
-            "click",
-            () => {
-
-                currentCategory =
-                    group;
-
-                renderCategories();
-                renderChannels();
-            }
+    const button =
+        document.createElement(
+            "button"
         );
 
-        categories.appendChild(button);
-    });
-
-
-    const allButton =
-        categories.querySelector(
-            '[data-category="Todos"]'
+    button.className =
+        "category" +
+        (
+            currentCategory === name
+                ? " active"
+                : ""
         );
 
-    if (allButton) {
+    button.textContent =
+        name;
 
-        allButton.addEventListener(
-            "click",
-            () => {
+    button.dataset.category =
+        name;
 
-                currentCategory =
-                    "Todos";
 
-                renderCategories();
-                renderChannels();
-            }
-        );
-    }
+    button.addEventListener(
+        "click",
+        () => {
+
+            currentCategory =
+                name;
+
+            renderCategories();
+            renderChannels();
+        }
+    );
+
+
+    categories.appendChild(
+        button
+    );
 }
 
 
 /* =========================
-   RENDERIZAR CANAIS
+   CANAIS
 ========================= */
 
 function renderChannels() {
@@ -341,44 +341,52 @@ function renderChannels() {
 
 
     const filtered =
-        channels.filter(channel => {
+        channels.filter(
+            channel => {
 
-            const name =
-                String(
-                    channel.name || ""
-                ).toLowerCase();
+                const name =
+                    String(
+                        channel.name || ""
+                    ).toLowerCase();
 
-            const group =
-                String(
-                    channel.group || ""
-                ).toLowerCase();
-
-
-            const matchesSearch =
-                !search ||
-                name.includes(search) ||
-                group.includes(search);
+                const group =
+                    String(
+                        channel.group || ""
+                    ).toLowerCase();
 
 
-            const matchesCategory =
-                currentCategory === "Todos" ||
-                channel.group ===
-                    currentCategory;
+                const matchesSearch =
+                    !search ||
+                    name.includes(
+                        search
+                    ) ||
+                    group.includes(
+                        search
+                    );
 
 
-            const matchesFavorite =
-                currentTab !== "favorites" ||
-                favorites.includes(
-                    channel.url
+                const matchesCategory =
+                    currentCategory ===
+                        "Todos" ||
+                    channel.group ===
+                        currentCategory;
+
+
+                const matchesFavorite =
+                    currentTab !==
+                        "favorites" ||
+                    favorites.includes(
+                        channel.url
+                    );
+
+
+                return (
+                    matchesSearch &&
+                    matchesCategory &&
+                    matchesFavorite
                 );
-
-
-            return (
-                matchesSearch &&
-                matchesCategory &&
-                matchesFavorite
-            );
-        });
+            }
+        );
 
 
     channelList.innerHTML = "";
@@ -396,7 +404,7 @@ function renderChannels() {
     }
 
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
 
         channelList.innerHTML = `
             <div style="
@@ -411,124 +419,129 @@ function renderChannels() {
     }
 
 
-    filtered.forEach(channel => {
+    filtered.forEach(
+        channel => {
 
-        const item =
-            document.createElement("div");
+            const item =
+                document.createElement(
+                    "div"
+                );
 
-        item.className =
-            "channel";
-
-
-        const isFavorite =
-            favorites.includes(
-                channel.url
-            );
+            item.className =
+                "channel";
 
 
-        item.innerHTML = `
-
-            <div class="channel-logo">
-
-                ${
-                    channel.logo
-
-                    ?
-
-                    `
-                    <img
-                        src="${escapeHTML(
-                            channel.logo
-                        )}"
-                        loading="lazy"
-                        onerror="
-                            this.style.display='none'
-                        "
-                    >
-                    `
-
-                    :
-
-                    "⚽"
-                }
-
-            </div>
-
-
-            <div class="channel-info">
-
-                <strong>
-                    ${escapeHTML(
-                        channel.name
-                    )}
-                </strong>
-
-                <small>
-                    ${escapeHTML(
-                        channel.group ||
-                        "Esportes"
-                    )}
-                </small>
-
-            </div>
-
-
-            <button
-                class="favorite"
-                type="button"
-            >
-                ${
-                    isFavorite
-                        ? "⭐"
-                        : "☆"
-                }
-            </button>
-        `;
-
-
-        item.addEventListener(
-            "click",
-            () => {
-                playChannel(channel);
-            }
-        );
-
-
-        const favoriteButton =
-            item.querySelector(
-                ".favorite"
-            );
-
-
-        favoriteButton.addEventListener(
-            "click",
-            event => {
-
-                event.stopPropagation();
-
-                toggleFavorite(
+            const favorite =
+                favorites.includes(
                     channel.url
                 );
-            }
-        );
 
 
-        channelList.appendChild(
-            item
-        );
-    });
+            item.innerHTML = `
+
+                <div class="channel-logo">
+
+                    ${
+                        channel.logo
+
+                        ?
+
+                        `
+                        <img
+                            src="${escapeHTML(
+                                channel.logo
+                            )}"
+                            loading="lazy"
+                            onerror="
+                                this.style.display='none'
+                            "
+                        >
+                        `
+
+                        :
+
+                        "⚽"
+                    }
+
+                </div>
+
+                <div class="channel-info">
+
+                    <strong>
+                        ${escapeHTML(
+                            channel.name
+                        )}
+                    </strong>
+
+                    <small>
+                        ${escapeHTML(
+                            channel.group ||
+                            "Esportes"
+                        )}
+                    </small>
+
+                </div>
+
+                <button
+                    class="favorite"
+                    type="button"
+                >
+                    ${
+                        favorite
+                            ? "⭐"
+                            : "☆"
+                    }
+                </button>
+            `;
+
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    playChannel(
+                        channel
+                    );
+                }
+            );
+
+
+            const favoriteButton =
+                item.querySelector(
+                    ".favorite"
+                );
+
+
+            favoriteButton.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+                    toggleFavorite(
+                        channel.url
+                    );
+                }
+            );
+
+
+            channelList.appendChild(
+                item
+            );
+        }
+    );
 }
 
 
 /* =========================
-   PLAYER
+   PLAYER V2
 ========================= */
 
 function playChannel(channel) {
 
     if (!video) {
         console.error(
-            "Video não encontrado."
+            "videoPlayer não encontrado."
         );
 
         return;
@@ -536,15 +549,17 @@ function playChannel(channel) {
 
 
     console.log(
-        "Abrindo canal:",
+        "🎬 Abrindo:",
         channel.name
     );
 
     console.log(
-        "URL:",
+        "🔗 URL:",
         channel.url
     );
 
+
+    /* MOSTRAR PLAYER */
 
     if (playerSection) {
 
@@ -560,30 +575,98 @@ function playChannel(channel) {
     if (nowPlaying) {
 
         nowPlaying.textContent =
-            "▶ " + channel.name;
+            "▶ " +
+            channel.name;
     }
 
 
-    clearPlayer();
+    /* LIMPAR PLAYER ANTERIOR */
+
+    destroyPlayer();
 
 
     const url =
         channel.url.toLowerCase();
 
 
-    /* DASH */
+    /* =========================
+       DETECTAR FORMATO
+    ========================= */
 
-    if (url.includes(".mpd")) {
+    const isDASH =
+        url.includes(".mpd") ||
+        url.includes("manifest.mpd") ||
+        url.includes("dash");
 
-        showPlayerMessage(
-            "⚠️ Este canal usa DASH (.mpd). O Player HLS não reproduz este formato."
+
+    const isHLS =
+        url.includes(".m3u8") ||
+        url.includes("playlist") ||
+        url.includes("hls");
+
+
+    console.log(
+        "Formato:",
+        isDASH
+            ? "DASH"
+            : isHLS
+                ? "HLS"
+                : "DESCONHECIDO"
+    );
+
+
+    /* =========================
+       DASH
+    ========================= */
+
+    if (isDASH) {
+
+        playDASH(
+            channel
         );
 
         return;
     }
 
 
-    /* HLS.JS */
+    /* =========================
+       HLS
+    ========================= */
+
+    if (isHLS) {
+
+        playHLS(
+            channel
+        );
+
+        return;
+    }
+
+
+    /* =========================
+       TENTAR HLS POR PADRÃO
+    ========================= */
+
+    playHLS(
+        channel
+    );
+}
+
+
+/* =========================
+   HLS
+========================= */
+
+function playHLS(channel) {
+
+    const url =
+        channel.url;
+
+
+    setStatus(
+        "📺 Abrindo HLS..."
+    );
+
 
     if (
         window.Hls &&
@@ -591,7 +674,7 @@ function playChannel(channel) {
     ) {
 
         console.log(
-            "HLS.js detectado."
+            "HLS.js disponível."
         );
 
 
@@ -604,7 +687,7 @@ function playChannel(channel) {
 
 
         hls.loadSource(
-            channel.url
+            url
         );
 
 
@@ -618,26 +701,25 @@ function playChannel(channel) {
             () => {
 
                 console.log(
-                    "Manifest HLS carregado."
+                    "✅ HLS carregado."
                 );
 
                 clearTimeout(
-                    loadingTimeout
+                    playerTimeout
                 );
 
+
+                setStatus(
+                    "▶ " +
+                    channel.name
+                );
+
+
                 video.play()
-                    .then(() => {
-
-                        setStatus(
-                            "▶ Reproduzindo: " +
-                            channel.name
-                        );
-
-                    })
                     .catch(() => {
 
                         setStatus(
-                            "▶ Toque no botão Play"
+                            "▶ Toque em Play"
                         );
                     });
             }
@@ -652,47 +734,34 @@ function playChannel(channel) {
             ) => {
 
                 console.error(
-                    "HLS ERROR:",
+                    "HLS:",
                     data
                 );
 
 
-                if (data.fatal) {
+                if (
+                    data.fatal
+                ) {
 
                     clearTimeout(
-                        loadingTimeout
+                        playerTimeout
                     );
 
 
-                    showPlayerMessage(
-                        "❌ Não foi possível reproduzir este canal."
+                    showPlayerError(
+                        "❌ Este canal HLS não está disponível."
                     );
 
 
-                    hls.destroy();
-
-                    hls = null;
+                    destroyHLS();
                 }
             }
         );
 
 
-        loadingTimeout =
-            setTimeout(
-                () => {
-
-                    if (
-                        video.readyState === 0
-                    ) {
-
-                        showPlayerMessage(
-                            "⏳ Este canal demorou demais para responder ou está offline."
-                        );
-                    }
-
-                },
-                15000
-            );
+        startTimeout(
+            "⏳ O canal HLS demorou demais para responder."
+        );
 
 
         return;
@@ -708,12 +777,17 @@ function playChannel(channel) {
     ) {
 
         video.src =
-            channel.url;
+            url;
 
 
         video.addEventListener(
             "loadedmetadata",
             () => {
+
+                clearTimeout(
+                    playerTimeout
+                );
+
 
                 video.play()
                     .catch(() => {});
@@ -725,26 +799,192 @@ function playChannel(channel) {
         );
 
 
+        startTimeout(
+            "⏳ O canal HLS demorou demais para responder."
+        );
+
+
         return;
     }
 
 
-    showPlayerMessage(
-        "❌ Seu navegador não suporta este formato."
+    showPlayerError(
+        "❌ HLS não é suportado neste navegador."
     );
 }
 
 
 /* =========================
-   LIMPAR PLAYER
+   DASH
 ========================= */
 
-function clearPlayer() {
+function playDASH(channel) {
 
-    clearTimeout(
-        loadingTimeout
+    const url =
+        channel.url;
+
+
+    setStatus(
+        "📺 Abrindo DASH..."
     );
 
+
+    if (
+        !window.dashjs
+    ) {
+
+        showPlayerError(
+            "❌ Player DASH não carregado."
+        );
+
+        return;
+    }
+
+
+    console.log(
+        "DASH.js disponível."
+    );
+
+
+    dash =
+        dashjs.MediaPlayer()
+            .create();
+
+
+    dash.initialize(
+        video,
+        url,
+        true
+    );
+
+
+    dash.on(
+        dashjs.MediaPlayer.events
+            .STREAM_INITIALIZED,
+        () => {
+
+            console.log(
+                "✅ DASH carregado."
+            );
+
+
+            clearTimeout(
+                playerTimeout
+            );
+
+
+            setStatus(
+                "▶ " +
+                channel.name
+            );
+        }
+    );
+
+
+    dash.on(
+        dashjs.MediaPlayer.events
+            .ERROR,
+        error => {
+
+            console.error(
+                "DASH:",
+                error
+            );
+
+
+            clearTimeout(
+                playerTimeout
+            );
+
+
+            showPlayerError(
+                "❌ Este canal DASH não está disponível."
+            );
+        }
+    );
+
+
+    startTimeout(
+        "⏳ O canal DASH demorou demais para responder."
+    );
+}
+
+
+/* =========================
+   TIMEOUT
+========================= */
+
+function startTimeout(message) {
+
+    clearTimeout(
+        playerTimeout
+    );
+
+
+    playerTimeout =
+        setTimeout(
+            () => {
+
+                if (
+                    video.readyState === 0
+                ) {
+
+                    showPlayerError(
+                        message
+                    );
+                }
+
+            },
+            15000
+        );
+}
+
+
+/* =========================
+   DESTRUIR PLAYER
+========================= */
+
+function destroyPlayer() {
+
+    clearTimeout(
+        playerTimeout
+    );
+
+
+    destroyHLS();
+
+
+    if (dash) {
+
+        try {
+            dash.reset();
+        } catch (e) {}
+
+        dash = null;
+    }
+
+
+    if (video) {
+
+        try {
+            video.pause();
+        } catch (e) {}
+
+
+        video.removeAttribute(
+            "src"
+        );
+
+        video.load();
+    }
+}
+
+
+/* =========================
+   DESTRUIR HLS
+========================= */
+
+function destroyHLS() {
 
     if (hls) {
 
@@ -754,27 +994,22 @@ function clearPlayer() {
 
         hls = null;
     }
-
-
-    video.pause();
-
-    video.removeAttribute(
-        "src"
-    );
-
-    video.load();
 }
 
 
 /* =========================
-   MENSAGEM PLAYER
+   ERRO
 ========================= */
 
-function showPlayerMessage(message) {
+function showPlayerError(message) {
 
-    setStatus(message);
+    console.error(
+        message
+    );
 
-    console.log(message);
+    setStatus(
+        message
+    );
 }
 
 
@@ -788,7 +1023,7 @@ if (closePlayer) {
         "click",
         () => {
 
-            clearPlayer();
+            destroyPlayer();
 
 
             if (playerSection) {
@@ -807,6 +1042,13 @@ if (closePlayer) {
                 nowPlaying.textContent =
                     "Nenhum canal";
             }
+
+
+            setStatus(
+                "⚽ " +
+                channels.length +
+                " canais"
+            );
         }
     );
 }
@@ -830,7 +1072,9 @@ function toggleFavorite(url) {
 
     } else {
 
-        favorites.push(url);
+        favorites.push(
+            url
+        );
     }
 
 
@@ -860,14 +1104,19 @@ if (searchInput) {
 
 
 /* =========================
-   RELOAD
+   RECARREGAR
 ========================= */
 
 if (reloadBtn) {
 
     reloadBtn.addEventListener(
         "click",
-        loadPlaylist
+        () => {
+
+            destroyPlayer();
+
+            loadPlaylist();
+        }
     );
 }
 
@@ -879,11 +1128,26 @@ if (reloadBtn) {
 function escapeHTML(text) {
 
     return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 }
 
 
