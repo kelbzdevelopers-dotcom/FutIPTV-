@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 
 const app = express();
 
@@ -8,15 +7,7 @@ const PORT = process.env.PORT || 3000;
 const PLAYLIST_URL =
     "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8";
 
-
-app.use(cors());
-
 app.use(express.static("public"));
-
-
-/* =========================
-   PALAVRAS ESPORTIVAS
-========================= */
 
 const SPORTS_KEYWORDS = [
     "sport",
@@ -30,8 +21,8 @@ const SPORTS_KEYWORDS = [
     "uefa",
     "champions",
     "premier league",
-    "la liga",
     "laliga",
+    "la liga",
     "bundesliga",
     "serie a",
     "serie b",
@@ -44,23 +35,15 @@ const SPORTS_KEYWORDS = [
     "red bull tv"
 ];
 
-
-/* =========================
-   TERMOS BRASILEIROS
-========================= */
-
 const BRAZIL_KEYWORDS = [
     "brasil",
     "brazil",
     "brasileira",
     "brasileiro",
-    "brasileirão",
+    "brasileirao",
     "globo",
-    "globo esporte",
     "sportv",
     "band",
-    "band sports",
-    "band esporte",
     "record",
     "sbt",
     "rede tv",
@@ -68,424 +51,170 @@ const BRAZIL_KEYWORDS = [
     "cultura",
     "gazeta",
     "tv brasil",
-    "tv brasil central",
-    "tvc",
-    "tv esporte",
     "nsports",
-    "canal uol",
     "tnt sports brasil"
 ];
 
-
-/* =========================
-   NORMALIZAR TEXTO
-========================= */
-
 function normalize(text) {
-
-    return String(text || "")
+    return text
+        .toLowerCase()
         .normalize("NFD")
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .toLowerCase();
+        .replace(/[\u0300-\u036f]/g, "");
 }
 
+function isBrazilian(text) {
+    const value = normalize(text);
 
-/* =========================
-   É BRASIL?
-========================= */
-
-function isBrazilian(line) {
-
-    const text =
-        normalize(line);
-
-    return BRAZIL_KEYWORDS.some(
-        keyword =>
-            text.includes(
-                normalize(keyword)
-            )
+    return BRAZIL_KEYWORDS.some(keyword =>
+        value.includes(normalize(keyword))
     );
 }
 
+function isSports(text) {
+    const value = normalize(text);
 
-/* =========================
-   É ESPORTE?
-========================= */
-
-function isSports(line) {
-
-    const text =
-        normalize(line);
-
-    return SPORTS_KEYWORDS.some(
-        keyword =>
-            text.includes(
-                normalize(keyword)
-            )
+    return SPORTS_KEYWORDS.some(keyword =>
+        value.includes(normalize(keyword))
     );
 }
-
-
-/* =========================
-   É STREAM VÁLIDO?
-========================= */
-
-function isValidStream(url) {
-
-    if (!url) return false;
-
-    if (
-        url.includes(
-            "[NO PUBLIC STREAM]"
-        )
-    ) {
-        return false;
-    }
-
-    if (
-        url.startsWith("#")
-    ) {
-        return false;
-    }
-
-    return (
-        url.startsWith(
-            "http://"
-        ) ||
-        url.startsWith(
-            "https://"
-        )
-    );
-}
-
-
-/* =========================
-   PROCESSAR PLAYLIST
-========================= */
 
 function processPlaylist(text) {
+    const lines = text.split(/\r?\n/);
 
-    const lines =
-        text.split(/\r?\n/);
-
-    const brazil = [];
-    const international = [];
+    const brazilChannels = [];
+    const internationalChannels = [];
 
     let currentInfo = null;
 
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
 
-    for (
-        let i = 0;
-        i < lines.length;
-        i++
-    ) {
-
-        const line =
-            lines[i].trim();
-
-
-        if (!line) {
+        if (line.startsWith("#EXTINF:")) {
+            currentInfo = line;
             continue;
         }
-
-
-        /*
-         * Encontrou informações do canal
-         */
-
-        if (
-            line
-                .toUpperCase()
-                .startsWith("#EXTINF")
-        ) {
-
-            currentInfo =
-                line;
-
-            continue;
-        }
-
-
-        /*
-         * Encontrou URL
-         */
 
         if (
             currentInfo &&
+            line &&
             !line.startsWith("#")
         ) {
+            const url = line;
 
-            const url =
-                line;
-
-
+            // Ignora streams claramente inválidos
             if (
-                isValidStream(url)
+                url.includes("[NO PUBLIC STREAM]") ||
+                url.includes("example.com")
             ) {
-
-                /*
-                 * Só queremos canais
-                 * esportivos ou brasileiros.
-                 */
-
-                const relevant =
-                    isSports(
-                        currentInfo
-                    ) ||
-                    isBrazilian(
-                        currentInfo
-                    );
-
-
-                if (relevant) {
-
-                    /*
-                     * BRASIL
-                     */
-
-                    if (
-                        isBrazilian(
-                            currentInfo
-                        )
-                    ) {
-
-                        brazil.push({
-                            info:
-                                currentInfo,
-                            url
-                        });
-
-                    }
-
-                    /*
-                     * INTERNACIONAL
-                     */
-
-                    else {
-
-                        international.push({
-                            info:
-                                currentInfo,
-                            url
-                        });
-                    }
-                }
+                currentInfo = null;
+                continue;
             }
 
+            const brazilian = isBrazilian(currentInfo);
+            const sports = isSports(currentInfo);
+
+            if (brazilian || sports) {
+                const channel = {
+                    info: currentInfo,
+                    url: url
+                };
+
+                if (brazilian) {
+                    brazilChannels.push(channel);
+                } else {
+                    internationalChannels.push(channel);
+                }
+            }
 
             currentInfo = null;
         }
     }
 
-
-    /*
-     * Brasil primeiro
-     */
-
-    const result = [
-        ...brazil,
-        ...international
+    const channels = [
+        ...brazilChannels,
+        ...internationalChannels
     ];
 
+    let output = "#EXTM3U\n";
 
-    /*
-     * Reconstruir M3U
-     */
+    for (const channel of channels) {
+        let info = channel.info;
 
-    let output =
-        "#EXTM3U\n";
-
-
-    for (
-        const channel of result
-    ) {
-
-        let info =
-            channel.info;
-
-
-        /*
-         * Adiciona grupo Brasil
-         * quando identificamos um canal
-         * brasileiro.
-         */
-
-        if (
-            isBrazilian(
-                channel.info
-            )
-        ) {
-
-            info =
-                info.replace(
+        // Marca canais brasileiros como categoria Brasil
+        if (isBrazilian(info)) {
+            if (/group-title="[^"]*"/i.test(info)) {
+                info = info.replace(
                     /group-title="[^"]*"/i,
                     'group-title="Brasil"'
                 );
+            } else {
+                info = info.replace(
+                    "#EXTINF:-1",
+                    '#EXTINF:-1 group-title="Brasil"'
+                );
+            }
         }
 
-
-        output +=
-            info +
-            "\n" +
-            channel.url +
-            "\n";
+        output += info + "\n";
+        output += channel.url + "\n";
     }
 
-
     return {
-        output,
-        brazilCount:
-            brazil.length,
-        internationalCount:
-            international.length,
-        total:
-            result.length
+        playlist: output,
+        total: channels.length,
+        brazil: brazilChannels.length,
+        international: internationalChannels.length
     };
 }
 
+app.get("/api/playlist", async (req, res) => {
+    try {
+        console.log("📡 Baixando playlist...");
 
-/* =========================
-   API PLAYLIST
-========================= */
+        const response = await fetch(PLAYLIST_URL);
 
-app.get(
-    "/api/playlist",
-    async (
-        req,
-        res
-    ) => {
-
-        try {
-
-            console.log(
-                "📥 Baixando playlist..."
+        if (!response.ok) {
+            throw new Error(
+                `Playlist respondeu ${response.status}`
             );
-
-
-            const response =
-                await fetch(
-                    PLAYLIST_URL
-                );
-
-
-            if (
-                !response.ok
-            ) {
-
-                throw new Error(
-                    "Playlist HTTP " +
-                    response.status
-                );
-            }
-
-
-            const text =
-                await response.text();
-
-
-            console.log(
-                "📦 Playlist recebida:",
-                text.length,
-                "caracteres"
-            );
-
-
-            const result =
-                processPlaylist(
-                    text
-                );
-
-
-            console.log(
-                "🇧🇷 Brasil:",
-                result.brazilCount
-            );
-
-            console.log(
-                "🌎 Internacional:",
-                result.internationalCount
-            );
-
-            console.log(
-                "⚽ Total:",
-                result.total
-            );
-
-
-            res
-                .type(
-                    "text/plain"
-                )
-                .send(
-                    result.output
-                );
-
-
-        } catch (error) {
-
-            console.error(
-                "❌ Erro:",
-                error
-            );
-
-
-            res
-                .status(500)
-                .type(
-                    "text/plain"
-                )
-                .send(
-                    "#EXTM3U\n"
-                );
         }
-    }
-);
 
+        const text = await response.text();
 
-/* =========================
-   STATUS
-========================= */
-
-app.get(
-    "/api/status",
-    (req, res) => {
-
-        res.json({
-            success: true,
-            app: "FutIPTV",
-            version: "1.1.0",
-            status: "online",
-            playlist:
-                "Free-TV/IPTV",
-            features: [
-                "Brasil primeiro",
-                "Canais esportivos",
-                "Canais internacionais",
-                "Filtro de streams inválidos"
-            ]
-        });
-    }
-);
-
-
-/* =========================
-   SERVIDOR
-========================= */
-
-app.listen(
-    PORT,
-    () => {
+        const result = processPlaylist(text);
 
         console.log(
-            "⚽ FutIPTV online na porta",
-            PORT
+            `⚽ ${result.total} canais encontrados`
         );
 
         console.log(
-            "🇧🇷 Modo: Brasil primeiro"
+            `🇧🇷 Brasil: ${result.brazil}`
+        );
+
+        console.log(
+            `🌎 Internacionais: ${result.international}`
+        );
+
+        res.type("text/plain").send(result.playlist);
+
+    } catch (error) {
+        console.error("❌ Erro:", error);
+
+        res.status(500).send(
+            "#EXTM3U\n"
         );
     }
-);
+});
+
+app.get("/api/status", (req, res) => {
+    res.json({
+        success: true,
+        app: "FutIPTV",
+        version: "1.0.0",
+        status: "online"
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 FutIPTV rodando na porta ${PORT}`);
+});
