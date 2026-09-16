@@ -19,11 +19,16 @@ const categories =
     document.getElementById("categories");
 
 let channels = [];
+
 let favorites = JSON.parse(
     localStorage.getItem("futiptv_favorites") || "[]"
 );
 
 let currentCategory = "Todos";
+
+/* CORREÇÃO */
+let currentTab = "all";
+
 let hls = null;
 let loadingTimeout = null;
 
@@ -33,6 +38,7 @@ let loadingTimeout = null;
 ========================= */
 
 function setStatus(text) {
+
     if (status) {
         status.textContent = text;
     }
@@ -108,6 +114,7 @@ async function loadPlaylist() {
         );
 
         if (channelList) {
+
             channelList.innerHTML = `
                 <div style="
                     padding:20px;
@@ -333,7 +340,7 @@ function renderChannels() {
             : "";
 
 
-    let filtered =
+    const filtered =
         channels.filter(channel => {
 
             const name =
@@ -377,9 +384,7 @@ function renderChannels() {
     channelList.innerHTML = "";
 
 
-    if (
-        channelCount
-    ) {
+    if (channelCount) {
 
         channelCount.textContent =
             filtered.length +
@@ -391,9 +396,7 @@ function renderChannels() {
     }
 
 
-    if (
-        filtered.length === 0
-    ) {
+    if (filtered.length === 0) {
 
         channelList.innerHTML = `
             <div style="
@@ -486,10 +489,7 @@ function renderChannels() {
         item.addEventListener(
             "click",
             () => {
-
-                playChannel(
-                    channel
-                );
+                playChannel(channel);
             }
         );
 
@@ -546,8 +546,6 @@ function playChannel(channel) {
     );
 
 
-    /* MOSTRAR PLAYER */
-
     if (playerSection) {
 
         playerSection.classList.remove(
@@ -566,8 +564,6 @@ function playChannel(channel) {
     }
 
 
-    /* LIMPAR PLAYER ANTERIOR */
-
     clearPlayer();
 
 
@@ -575,25 +571,19 @@ function playChannel(channel) {
         channel.url.toLowerCase();
 
 
-    /* =========================
-       DASH
-    ========================= */
+    /* DASH */
 
-    if (
-        url.includes(".mpd")
-    ) {
+    if (url.includes(".mpd")) {
 
         showPlayerMessage(
-            "⚠️ Este canal usa DASH (.mpd). O Player HLS não consegue reproduzir este formato."
+            "⚠️ Este canal usa DASH (.mpd). O Player HLS não reproduz este formato."
         );
 
         return;
     }
 
 
-    /* =========================
-       HLS
-    ========================= */
+    /* HLS.JS */
 
     if (
         window.Hls &&
@@ -644,12 +634,7 @@ function playChannel(channel) {
                         );
 
                     })
-                    .catch(error => {
-
-                        console.log(
-                            "Autoplay bloqueado:",
-                            error
-                        );
+                    .catch(() => {
 
                         setStatus(
                             "▶ Toque no botão Play"
@@ -672,9 +657,7 @@ function playChannel(channel) {
                 );
 
 
-                if (
-                    data.fatal
-                ) {
+                if (data.fatal) {
 
                     clearTimeout(
                         loadingTimeout
@@ -694,8 +677,6 @@ function playChannel(channel) {
         );
 
 
-        /* TIMEOUT */
-
         loadingTimeout =
             setTimeout(
                 () => {
@@ -703,10 +684,6 @@ function playChannel(channel) {
                     if (
                         video.readyState === 0
                     ) {
-
-                        console.log(
-                            "Timeout HLS."
-                        );
 
                         showPlayerMessage(
                             "⏳ Este canal demorou demais para responder ou está offline."
@@ -722,9 +699,7 @@ function playChannel(channel) {
     }
 
 
-    /* =========================
-       SAFARI / HLS NATIVO
-    ========================= */
+    /* HLS NATIVO */
 
     if (
         video.canPlayType(
@@ -741,9 +716,8 @@ function playChannel(channel) {
             () => {
 
                 video.play()
-                    .catch(
-                        () => {}
-                    );
+                    .catch(() => {});
+
             },
             {
                 once: true
@@ -793,20 +767,14 @@ function clearPlayer() {
 
 
 /* =========================
-   MENSAGEM NO PLAYER
+   MENSAGEM PLAYER
 ========================= */
 
-function showPlayerMessage(
-    message
-) {
+function showPlayerMessage(message) {
 
-    setStatus(
-        message
-    );
+    setStatus(message);
 
-    console.log(
-        message
-    );
+    console.log(message);
 }
 
 
@@ -862,9 +830,7 @@ function toggleFavorite(url) {
 
     } else {
 
-        favorites.push(
-            url
-        );
+        favorites.push(url);
     }
 
 
@@ -907,32 +873,17 @@ if (reloadBtn) {
 
 
 /* =========================
-   SEGURANÇA HTML
+   SEGURANÇA
 ========================= */
 
 function escapeHTML(text) {
 
     return String(text)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
