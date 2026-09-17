@@ -59,6 +59,7 @@
             id="refreshBtn"
             class="icon-button"
             aria-label="Atualizar canais"
+            type="button"
         >
             ↻
         </button>
@@ -98,6 +99,7 @@
         <button
             class="category active"
             data-category="Todos"
+            type="button"
         >
             Todos
         </button>
@@ -112,15 +114,33 @@
         class="player-section hidden"
     >
 
-        <div class="player-container">
+        <div
+            id="playerContainer"
+            class="player-container"
+        >
 
             <video
                 id="videoPlayer"
                 controls
                 playsinline
+                webkit-playsinline
+                preload="metadata"
             ></video>
 
+            <!-- BOTÃO FULLSCREEN -->
+
+            <button
+                id="fullscreenBtn"
+                class="fullscreen-btn"
+                type="button"
+                aria-label="Tela cheia"
+                title="Tela cheia"
+            >
+                ⛶
+            </button>
+
         </div>
+
 
         <div class="player-info">
 
@@ -140,6 +160,7 @@
                 id="closePlayer"
                 class="close-player"
                 type="button"
+                aria-label="Fechar player"
             >
                 ✕
             </button>
@@ -180,9 +201,6 @@
             id="canais"
             class="channels-grid"
         >
-
-            <!-- JavaScript coloca os canais aqui -->
-
         </div>
 
     </section>
@@ -235,9 +253,16 @@
 ></script>
 
 
+<!-- DASH.JS -->
+
+<script
+    src="https://cdn.dashjs.org/latest/dash.all.min.js"
+></script>
+
+
 <!-- APP -->
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 
 </body>
 
