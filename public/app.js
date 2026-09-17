@@ -1,14 +1,45 @@
-const video = document.getElementById("videoPlayer");
-const channelList = document.getElementById("canais");
-const reloadBtn = document.getElementById("refreshBtn");
-const nowPlaying = document.getElementById("playerTitle");
-const channelCount = document.getElementById("channelCount");
-const loading = document.getElementById("loading");
-const status = document.getElementById("status");
-const searchInput = document.getElementById("searchInput");
+/* =====================================================
+   FUTIPTV
+   APP.JS
+   ===================================================== */
+
+
+/* =========================
+   ELEMENTOS
+========================= */
+
+const video =
+    document.getElementById("videoPlayer");
+
+const channelList =
+    document.getElementById("canais");
+
+const reloadBtn =
+    document.getElementById("refreshBtn");
+
+const nowPlaying =
+    document.getElementById("playerTitle");
+
+const channelCount =
+    document.getElementById("channelCount");
+
+const loading =
+    document.getElementById("loading");
+
+const status =
+    document.getElementById("status");
+
+const searchInput =
+    document.getElementById("searchInput");
 
 const playerSection =
     document.getElementById("playerSection");
+
+const playerContainer =
+    document.getElementById("playerContainer");
+
+const fullscreenBtn =
+    document.getElementById("fullscreenBtn");
 
 const closePlayer =
     document.getElementById("closePlayer");
@@ -16,23 +47,33 @@ const closePlayer =
 const categories =
     document.getElementById("categories");
 
+
+/* =========================
+   VARIÁVEIS
+========================= */
+
 let channels = [];
 
 let favorites = JSON.parse(
-    localStorage.getItem("futiptv_favorites") || "[]"
+    localStorage.getItem(
+        "futiptv_favorites"
+    ) || "[]"
 );
 
 let currentCategory = "Todos";
+
 let currentTab = "all";
 
 let hls = null;
+
 let dash = null;
+
 let playerTimeout = null;
 
 
-/* =========================
+/* =====================================================
    STATUS
-========================= */
+===================================================== */
 
 function setStatus(text) {
 
@@ -40,56 +81,284 @@ function setStatus(text) {
         status.textContent = text;
     }
 
-    console.log("FutIPTV:", text);
+    console.log(
+        "FutIPTV:",
+        text
+    );
 }
 
 
-/* =========================
-   PLAYLIST
-========================= */
+/* =====================================================
+   FULLSCREEN
+===================================================== */
 
-async function loadPlaylist() {
+async function ativarTelaCheia() {
 
-    setStatus("📥 Carregando canais...");
-
-    if (loading) {
-        loading.style.display = "block";
+    if (!video) {
+        return;
     }
 
     try {
 
-        const response = await fetch(
-            "/api/playlist?t=" + Date.now()
+        /*
+         * Android/WebView
+         *
+         * Alguns WebViews suportam
+         * diretamente o fullscreen nativo
+         * do elemento <video>.
+         */
+
+        if (
+            typeof video.webkitEnterFullscreen ===
+            "function"
+        ) {
+
+            video.webkitEnterFullscreen();
+
+            return;
+        }
+
+
+        /*
+         * Fullscreen API padrão
+         */
+
+        if (
+            typeof video.requestFullscreen ===
+            "function"
+        ) {
+
+            await video.requestFullscreen();
+
+            return;
+        }
+
+
+        /*
+         * Tenta colocar o container
+         * inteiro em fullscreen.
+         */
+
+        if (
+            playerContainer &&
+            typeof playerContainer.requestFullscreen ===
+            "function"
+        ) {
+
+            await playerContainer.requestFullscreen();
+
+            return;
+        }
+
+
+        /*
+         * WebKit
+         */
+
+        if (
+            typeof video.webkitRequestFullscreen ===
+            "function"
+        ) {
+
+            video.webkitRequestFullscreen();
+
+            return;
+        }
+
+
+        /*
+         * Microsoft antigo
+         */
+
+        if (
+            typeof video.msRequestFullscreen ===
+            "function"
+        ) {
+
+            video.msRequestFullscreen();
+
+            return;
+        }
+
+
+        console.warn(
+            "Fullscreen não suportado."
         );
 
+    } catch (error) {
+
+        console.error(
+            "Erro ao entrar em fullscreen:",
+            error
+        );
+
+    }
+}
+
+
+/* =========================
+   SAIR DO FULLSCREEN
+========================= */
+
+async function sairDaTelaCheia() {
+
+    try {
+
+        if (
+            document.fullscreenElement
+        ) {
+
+            await document.exitFullscreen();
+
+            return;
+        }
+
+
+        if (
+            document.webkitFullscreenElement
+        ) {
+
+            if (
+                document.webkitExitFullscreen
+            ) {
+
+                document.webkitExitFullscreen();
+            }
+
+            return;
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao sair do fullscreen:",
+            error
+        );
+    }
+}
+
+
+/* =========================
+   BOTÃO FULLSCREEN
+========================= */
+
+if (fullscreenBtn) {
+
+    fullscreenBtn.addEventListener(
+        "click",
+        async function(event) {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+            await ativarTelaCheia();
+
+        }
+    );
+}
+
+
+/* =========================
+   EVENTOS FULLSCREEN
+========================= */
+
+function fullscreenMudou() {
+
+    const ativo =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement;
+
+    if (fullscreenBtn) {
+
+        fullscreenBtn.textContent =
+            ativo
+                ? "⛶"
+                : "⛶";
+    }
+}
+
+
+document.addEventListener(
+    "fullscreenchange",
+    fullscreenMudou
+);
+
+
+document.addEventListener(
+    "webkitfullscreenchange",
+    fullscreenMudou
+);
+
+
+/* =====================================================
+   PLAYLIST
+===================================================== */
+
+async function loadPlaylist() {
+
+    setStatus(
+        "📥 Carregando canais..."
+    );
+
+    if (loading) {
+
+        loading.style.display =
+            "block";
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/playlist?t=" +
+                Date.now()
+            );
+
+
         if (!response.ok) {
+
             throw new Error(
-                "HTTP " + response.status
+                "HTTP " +
+                response.status
             );
         }
+
 
         const text =
             await response.text();
 
-        if (!text.includes("#EXTINF")) {
+
+        if (
+            !text.includes(
+                "#EXTINF"
+            )
+        ) {
+
             throw new Error(
                 "Nenhum canal encontrado."
             );
         }
 
+
         channels =
             parseM3U(text);
+
 
         console.log(
             "Canais encontrados:",
             channels.length
         );
 
+
         if (!channels.length) {
+
             throw new Error(
                 "Nenhum canal válido."
             );
         }
+
 
         setStatus(
             "⚽ " +
@@ -97,17 +366,21 @@ async function loadPlaylist() {
             " canais"
         );
 
+
         renderCategories();
+
         renderChannels();
 
     } catch (error) {
 
         console.error(error);
 
+
         setStatus(
             "❌ " +
             error.message
         );
+
 
         if (channelList) {
 
@@ -130,15 +403,17 @@ async function loadPlaylist() {
     } finally {
 
         if (loading) {
-            loading.style.display = "none";
+
+            loading.style.display =
+                "none";
         }
     }
 }
 
 
-/* =========================
+/* =====================================================
    PARSER M3U
-========================= */
+===================================================== */
 
 function parseM3U(text) {
 
@@ -149,6 +424,7 @@ function parseM3U(text) {
 
     let current = null;
 
+
     for (
         let i = 0;
         i < lines.length;
@@ -158,7 +434,10 @@ function parseM3U(text) {
         const line =
             lines[i].trim();
 
-        if (!line) continue;
+
+        if (!line) {
+            continue;
+        }
 
 
         if (
@@ -168,15 +447,20 @@ function parseM3U(text) {
         ) {
 
             current = {
+
                 name: "Canal",
+
                 logo: "",
+
                 group: "",
+
                 url: ""
             };
 
 
             const comma =
                 line.lastIndexOf(",");
+
 
             if (comma !== -1) {
 
@@ -194,7 +478,9 @@ function parseM3U(text) {
                     /tvg-logo=["']([^"']*)["']/i
                 );
 
+
             if (logo) {
+
                 current.logo =
                     logo[1];
             }
@@ -205,10 +491,13 @@ function parseM3U(text) {
                     /group-title=["']([^"']*)["']/i
                 );
 
+
             if (group) {
+
                 current.group =
                     group[1];
             }
+
 
             continue;
         }
@@ -233,21 +522,26 @@ function parseM3U(text) {
                 );
             }
 
+
             current = null;
         }
     }
+
 
     return result;
 }
 
 
-/* =========================
+/* =====================================================
    CATEGORIAS
-========================= */
+===================================================== */
 
 function renderCategories() {
 
-    if (!categories) return;
+    if (!categories) {
+        return;
+    }
+
 
     const groups = [
         ...new Set(
@@ -261,7 +555,8 @@ function renderCategories() {
     ];
 
 
-    categories.innerHTML = "";
+    categories.innerHTML =
+        "";
 
 
     addCategoryButton(
@@ -280,6 +575,10 @@ function renderCategories() {
 }
 
 
+/* =========================
+   BOTÃO DE CATEGORIA
+========================= */
+
 function addCategoryButton(
     name
 ) {
@@ -289,6 +588,7 @@ function addCategoryButton(
             "button"
         );
 
+
     button.className =
         "category" +
         (
@@ -297,11 +597,17 @@ function addCategoryButton(
                 : ""
         );
 
+
     button.textContent =
         name;
 
+
     button.dataset.category =
         name;
+
+
+    button.type =
+        "button";
 
 
     button.addEventListener(
@@ -312,6 +618,7 @@ function addCategoryButton(
                 name;
 
             renderCategories();
+
             renderChannels();
         }
     );
@@ -323,13 +630,15 @@ function addCategoryButton(
 }
 
 
-/* =========================
+/* =====================================================
    CANAIS
-========================= */
+===================================================== */
 
 function renderChannels() {
 
-    if (!channelList) return;
+    if (!channelList) {
+        return;
+    }
 
 
     const search =
@@ -348,6 +657,7 @@ function renderChannels() {
                     String(
                         channel.name || ""
                     ).toLowerCase();
+
 
                 const group =
                     String(
@@ -389,7 +699,8 @@ function renderChannels() {
         );
 
 
-    channelList.innerHTML = "";
+    channelList.innerHTML =
+        "";
 
 
     if (channelCount) {
@@ -427,6 +738,7 @@ function renderChannels() {
                     "div"
                 );
 
+
             item.className =
                 "channel";
 
@@ -443,9 +755,7 @@ function renderChannels() {
 
                     ${
                         channel.logo
-
                         ?
-
                         `
                         <img
                             src="${escapeHTML(
@@ -457,13 +767,12 @@ function renderChannels() {
                             "
                         >
                         `
-
                         :
-
                         "⚽"
                     }
 
                 </div>
+
 
                 <div class="channel-info">
 
@@ -482,9 +791,11 @@ function renderChannels() {
 
                 </div>
 
+
                 <button
                     class="favorite"
                     type="button"
+                    aria-label="Favoritar canal"
                 >
                     ${
                         favorite
@@ -492,6 +803,7 @@ function renderChannels() {
                             : "☆"
                     }
                 </button>
+
             `;
 
 
@@ -512,17 +824,20 @@ function renderChannels() {
                 );
 
 
-            favoriteButton.addEventListener(
-                "click",
-                event => {
+            if (favoriteButton) {
 
-                    event.stopPropagation();
+                favoriteButton.addEventListener(
+                    "click",
+                    event => {
 
-                    toggleFavorite(
-                        channel.url
-                    );
-                }
-            );
+                        event.stopPropagation();
+
+                        toggleFavorite(
+                            channel.url
+                        );
+                    }
+                );
+            }
 
 
             channelList.appendChild(
@@ -533,13 +848,14 @@ function renderChannels() {
 }
 
 
-/* =========================
-   PLAYER V2
-========================= */
+/* =====================================================
+   PLAYER
+===================================================== */
 
 function playChannel(channel) {
 
     if (!video) {
+
         console.error(
             "videoPlayer não encontrado."
         );
@@ -552,6 +868,7 @@ function playChannel(channel) {
         "🎬 Abrindo:",
         channel.name
     );
+
 
     console.log(
         "🔗 URL:",
@@ -580,7 +897,7 @@ function playChannel(channel) {
     }
 
 
-    /* LIMPAR PLAYER ANTERIOR */
+    /* LIMPAR PLAYER */
 
     destroyPlayer();
 
@@ -589,15 +906,15 @@ function playChannel(channel) {
         channel.url.toLowerCase();
 
 
-    /* =========================
-       DETECTAR FORMATO
-    ========================= */
+    /* DETECTAR DASH */
 
     const isDASH =
         url.includes(".mpd") ||
         url.includes("manifest.mpd") ||
         url.includes("dash");
 
+
+    /* DETECTAR HLS */
 
     const isHLS =
         url.includes(".m3u8") ||
@@ -615,10 +932,6 @@ function playChannel(channel) {
     );
 
 
-    /* =========================
-       DASH
-    ========================= */
-
     if (isDASH) {
 
         playDASH(
@@ -628,10 +941,6 @@ function playChannel(channel) {
         return;
     }
 
-
-    /* =========================
-       HLS
-    ========================= */
 
     if (isHLS) {
 
@@ -643,19 +952,15 @@ function playChannel(channel) {
     }
 
 
-    /* =========================
-       TENTAR HLS POR PADRÃO
-    ========================= */
-
     playHLS(
         channel
     );
 }
 
 
-/* =========================
+/* =====================================================
    HLS
-========================= */
+===================================================== */
 
 function playHLS(channel) {
 
@@ -680,8 +985,11 @@ function playHLS(channel) {
 
         hls =
             new Hls({
+
                 enableWorker: true,
+
                 lowLatencyMode: true,
+
                 backBufferLength: 30
             });
 
@@ -704,6 +1012,7 @@ function playHLS(channel) {
                     "✅ HLS carregado."
                 );
 
+
                 clearTimeout(
                     playerTimeout
                 );
@@ -716,12 +1025,14 @@ function playHLS(channel) {
 
 
                 video.play()
-                    .catch(() => {
+                    .catch(
+                        () => {
 
-                        setStatus(
-                            "▶ Toque em Play"
-                        );
-                    });
+                            setStatus(
+                                "▶ Toque em Play"
+                            );
+                        }
+                    );
             }
         );
 
@@ -790,7 +1101,9 @@ function playHLS(channel) {
 
 
                 video.play()
-                    .catch(() => {});
+                    .catch(
+                        () => {}
+                    );
 
             },
             {
@@ -814,9 +1127,9 @@ function playHLS(channel) {
 }
 
 
-/* =========================
+/* =====================================================
    DASH
-========================= */
+===================================================== */
 
 function playDASH(channel) {
 
@@ -910,9 +1223,9 @@ function playDASH(channel) {
 }
 
 
-/* =========================
+/* =====================================================
    TIMEOUT
-========================= */
+===================================================== */
 
 function startTimeout(message) {
 
@@ -926,6 +1239,7 @@ function startTimeout(message) {
             () => {
 
                 if (
+                    video &&
                     video.readyState === 0
                 ) {
 
@@ -940,9 +1254,9 @@ function startTimeout(message) {
 }
 
 
-/* =========================
+/* =====================================================
    DESTRUIR PLAYER
-========================= */
+===================================================== */
 
 function destroyPlayer() {
 
@@ -957,7 +1271,9 @@ function destroyPlayer() {
     if (dash) {
 
         try {
+
             dash.reset();
+
         } catch (e) {}
 
         dash = null;
@@ -967,7 +1283,9 @@ function destroyPlayer() {
     if (video) {
 
         try {
+
             video.pause();
+
         } catch (e) {}
 
 
@@ -975,21 +1293,24 @@ function destroyPlayer() {
             "src"
         );
 
+
         video.load();
     }
 }
 
 
-/* =========================
+/* =====================================================
    DESTRUIR HLS
-========================= */
+===================================================== */
 
 function destroyHLS() {
 
     if (hls) {
 
         try {
+
             hls.destroy();
+
         } catch (e) {}
 
         hls = null;
@@ -997,9 +1318,9 @@ function destroyHLS() {
 }
 
 
-/* =========================
+/* =====================================================
    ERRO
-========================= */
+===================================================== */
 
 function showPlayerError(message) {
 
@@ -1007,21 +1328,25 @@ function showPlayerError(message) {
         message
     );
 
+
     setStatus(
         message
     );
 }
 
 
-/* =========================
+/* =====================================================
    FECHAR PLAYER
-========================= */
+===================================================== */
 
 if (closePlayer) {
 
     closePlayer.addEventListener(
         "click",
-        () => {
+        async () => {
+
+            await sairDaTelaCheia();
+
 
             destroyPlayer();
 
@@ -1054,9 +1379,9 @@ if (closePlayer) {
 }
 
 
-/* =========================
+/* =====================================================
    FAVORITOS
-========================= */
+===================================================== */
 
 function toggleFavorite(url) {
 
@@ -1090,9 +1415,9 @@ function toggleFavorite(url) {
 }
 
 
-/* =========================
+/* =====================================================
    PESQUISA
-========================= */
+===================================================== */
 
 if (searchInput) {
 
@@ -1103,9 +1428,9 @@ if (searchInput) {
 }
 
 
-/* =========================
+/* =====================================================
    RECARREGAR
-========================= */
+===================================================== */
 
 if (reloadBtn) {
 
@@ -1121,29 +1446,34 @@ if (reloadBtn) {
 }
 
 
-/* =========================
+/* =====================================================
    SEGURANÇA
-========================= */
+===================================================== */
 
 function escapeHTML(text) {
 
     return String(text)
+
         .replace(
             /&/g,
             "&amp;"
         )
+
         .replace(
             /</g,
             "&lt;"
         )
+
         .replace(
             />/g,
             "&gt;"
         )
+
         .replace(
             /"/g,
             "&quot;"
         )
+
         .replace(
             /'/g,
             "&#039;"
@@ -1151,8 +1481,8 @@ function escapeHTML(text) {
 }
 
 
-/* =========================
+/* =====================================================
    INICIAR
-========================= */
+===================================================== */
 
 loadPlaylist();
