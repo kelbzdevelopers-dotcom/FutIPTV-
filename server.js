@@ -2,6 +2,7 @@
 import express from "express";
 import dns from "node:dns/promises";
 import net from "node:net";
+import { parseM3U, writeM3U } from "@iptv/playlist";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,15 +13,9 @@ app.use(express.static("public"));
 const MAX_PLAYLIST_SIZE = 20 * 1024 * 1024;
 const MAX_CHANNELS = 50000;
 const CACHE_TTL = 5 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 10;
 
 const cache = new Map();
-
-function normalize(value = "") {
-    return String(value)
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-}
 
 function isPrivateIPv4(ip) {
     const p = ip.split(".").map(Number);
@@ -42,16 +37,7 @@ function isPublicAddress(ip) {
 
     if (type === 4) return !isPrivateIPv4(ip);
 
-    if (type === 6) {
-        const normalized = ip.toLowerCase();
-
-        // Aceita somente IPv6 global unicast.
-        return (
-            normalized.startsWith("2") ||
-            normalized.startsWith("3")
-        ) && !normalized.startsWith("2001:db8:");
-    }
-
+    // Por segurança, não aceitamos IPv6 neste MVP.
     return false;
 }
 
@@ -65,7 +51,7 @@ async function validateURL(value) {
     }
 
     if (!["http:", "https:"].includes(url.protocol)) {
-        throw new Error("Somente URLs HTTP e HTTPS são permitidas.");
+        throw new Error("Somente HTTP e HTTPS são permitidos.");
     }
 
     if (url.username || url.password) {
@@ -84,7 +70,7 @@ async function validateURL(value) {
 
     if (net.isIP(hostname)) {
         if (!isPublicAddress(hostname)) {
-            throw new Error("Endereço IP privado não permitido.");
+            throw new Error("Endereço IP não permitido.");
         }
     } else {
         const addresses = await dns.lookup(hostname, {
@@ -96,7 +82,7 @@ async function validateURL(value) {
             !addresses.length ||
             addresses.some(item => !isPublicAddress(item.address))
         ) {
-            throw new Error("O endereço resolve para uma rede não permitida.");
+            throw new Error("Endereço não permitido.");
         }
     }
 
@@ -117,7 +103,7 @@ async function downloadPlaylist(initialURL) {
                 signal: controller.signal,
                 redirect: "manual",
                 headers: {
-                    "User-Agent": "FutIPTV/1.1",
+                    "User-Agent": "FutIPTV/1.2",
                     "Accept": "application/x-mpegURL, text/plain, */*"
                 }
             });
@@ -179,7 +165,7 @@ async function downloadPlaylist(initialURL) {
             const content = new TextDecoder("utf-8").decode(bytes);
 
             if (!content.trimStart().startsWith("#EXTM3U")) {
-                throw new Error("O endereço não contém uma playlist M3U válida.");
+                throw new Error("Playlist M3U inválida.");
             }
 
             return content;
@@ -192,68 +178,37 @@ async function downloadPlaylist(initialURL) {
     throw new Error("Limite de redirecionamentos excedido.");
 }
 
-function getAttribute(info, name) {
-    const match = info.match(
-        new RegExp(`(?:^|\\\\s)${name}="([^"]*)"`, "i")
-    );
-
-    return match ? match[1].trim() : "";
-}
-
 function parsePlaylist(content) {
-    const lines = content.split(/\r?\n/);
+    const parsed = parseM3U(content);
 
-    const channels = [];
-    let currentInfo = null;
-    let currentGroup = "";
-
-    for (const rawLine of lines) {
-        const line = rawLine.trim();
-
-        if (!line) continue;
-
-        if (line.startsWith("#EXTGRP:")) {
-            currentGroup = line.substring(8).trim();
-            continue;
-        }
-
-        if (line.startsWith("#EXTINF:")) {
-            currentInfo = line;
-            continue;
-        }
-
-        if (
-            currentInfo &&
-            !line.startsWith("#") &&
-            /^https?:\/\//i.test(line)
-        ) {
-            const name = currentInfo
-                .substring(currentInfo.lastIndexOf(",") + 1)
-                .trim();
-
-            const category =
-                getAttribute(currentInfo, "group-title") ||
-                currentGroup ||
-                "Sem categoria";
-
-            const logo = getAttribute(currentInfo, "tvg-logo");
-            const tvgId = getAttribute(currentInfo, "tvg-id");
-
-            channels.push({
-                id: channels.length + 1,
-                name: name || "Canal sem nome",
-                category,
-                logo,
-                tvgId,
-                url: line
-            });
-
-            currentInfo = null;
-            currentGroup = "";
-
-            if (channels.length >= MAX_CHANNELS) break;
-        }
+    if (!parsed || !Array.isArray(parsed.channels)) {
+        throw new Error("Não foi possível interpretar a playlist.");
     }
+
+    const originalChannels = parsed.channels.slice(0, MAX_CHANNELS);
+
+    const channels = originalChannels
+        .filter(channel => {
+            if (!channel || typeof channel.url !== "string") {
+                return false;
+            }
+
+            try {
+                const url = new URL(channel.url);
+                return ["http:", "https:"].includes(url.protocol);
+            } catch {
+                return false;
+            }
+        })
+        .map((channel, index) => ({
+            ...channel,
+            id: index + 1,
+            name: channel.name || channel.tvgName || "Canal sem nome",
+            category: channel.groupTitle || "Sem categoria",
+            logo: channel.tvgLogo || "",
+            tvgId: channel.tvgId || "",
+            url: channel.url
+        }));
 
     const categories = {};
 
@@ -262,24 +217,85 @@ function parsePlaylist(content) {
             categories[channel.category] = [];
         }
 
-        categories[channel.category].push(channel);
+        // Guarda os IDs para evitar duplicar todos os objetos no JSON.
+        categories[channel.category].push(channel.id);
     }
+
+    const exportPlaylist = {
+        headers: parsed.headers || {},
+        channels: channels.map(channel => {
+            const { id, category, logo, ...original } = channel;
+            return original;
+        })
+    };
 
     return {
         total: channels.length,
         categoryCount: Object.keys(categories).length,
         categories,
-        channels
+        channels,
+        exportPlaylist
     };
 }
 
+function getCached(url) {
+    const item = cache.get(url);
+
+    if (!item) return null;
+
+    if (Date.now() - item.time > CACHE_TTL) {
+        cache.delete(url);
+        return null;
+    }
+
+    return item.data;
+}
+
+function saveCache(url, data) {
+    if (cache.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = cache.keys().next().value;
+        if (oldestKey) cache.delete(oldestKey);
+    }
+
+    cache.set(url, {
+        time: Date.now(),
+        data
+    });
+}
+
+async function loadPlaylist(url) {
+    const cached = getCached(url);
+
+    if (cached) {
+        return {
+            data: cached,
+            cached: true
+        };
+    }
+
+    const content = await downloadPlaylist(url);
+    const data = parsePlaylist(content);
+
+    if (!data.total) {
+        throw new Error("Nenhum canal válido foi encontrado.");
+    }
+
+    saveCache(url, data);
+
+    return {
+        data,
+        cached: false
+    };
+}
+
+// IMPORTAR PLAYLIST
 app.post("/api/playlists/import", async (req, res) => {
     try {
         const playlistURL = req.body?.url;
 
         if (
             typeof playlistURL !== "string" ||
-            playlistURL.length > 2048
+            playlistURL.trim().length > 2048
         ) {
             return res.status(400).json({
                 success: false,
@@ -287,41 +303,20 @@ app.post("/api/playlists/import", async (req, res) => {
             });
         }
 
-        const cacheKey = playlistURL.trim();
-        const cached = cache.get(cacheKey);
-
-        if (cached && Date.now() - cached.time < CACHE_TTL) {
-            return res.json({
-                success: true,
-                cached: true,
-                ...cached.data
-            });
-        }
-
         console.log("📡 Importando playlist...");
 
-        const content = await downloadPlaylist(cacheKey);
-        const result = parsePlaylist(content);
+        const result = await loadPlaylist(playlistURL.trim());
 
-        if (!result.total) {
-            return res.status(422).json({
-                success: false,
-                error: "Nenhum canal válido foi encontrado."
-            });
-        }
-
-        cache.set(cacheKey, {
-            time: Date.now(),
-            data: result
-        });
-
-        console.log(`📺 ${result.total} canais`);
-        console.log(`📂 ${result.categoryCount} categorias`);
+        console.log(`📺 ${result.data.total} canais`);
+        console.log(`📂 ${result.data.categoryCount} categorias`);
 
         return res.json({
             success: true,
-            cached: false,
-            ...result
+            cached: result.cached,
+            total: result.data.total,
+            categoryCount: result.data.categoryCount,
+            categories: result.data.categories,
+            channels: result.data.channels
         });
 
     } catch (error) {
@@ -334,18 +329,35 @@ app.post("/api/playlists/import", async (req, res) => {
     }
 });
 
-app.get("/api/status", (req, res) => {
-    res.json({
-        success: true,
-        app: "FutIPTV",
-        version: "1.1.0",
-        status: "online",
-        playlistImport: true,
-        categories: true,
-        maxChannels: MAX_CHANNELS
-    });
+// EXPORTAR PLAYLIST M3U
+app.get("/api/playlists/export", async (req, res) => {
+    try {
+        const playlistURL = req.query.url;
+
+        if (
+            typeof playlistURL !== "string" ||
+            playlistURL.length > 2048
+        ) {
+            return res.status(400).send("Informe uma URL válida.");
+        }
+
+        const result = await loadPlaylist(playlistURL.trim());
+
+        const m3u = writeM3U(result.data.exportPlaylist);
+
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="futiptv.m3u"'
+        );
+
+        res.type("application/x-mpegURL").send(m3u);
+
+    } catch (error) {
+        console.error("Erro na exportação:", error.message);
+        res.status(400).send(error.message);
+    }
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 FutIPTV v1.1.0 na porta ${PORT}`);
+    console.log(`🚀 FutIPTV v1.2.0 na porta ${PORT}`);
 });
