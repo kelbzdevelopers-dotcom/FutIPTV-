@@ -1,5 +1,5 @@
 
-import express from "express";
+import { parseM3U, writeM3U } from "@iptv/playlist";
 import dns from "node:dns/promises";
 import net from "node:net";
 import { parseM3U, writeM3U } from "@iptv/playlist";
