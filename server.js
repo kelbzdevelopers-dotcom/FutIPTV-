@@ -9,10 +9,10 @@ import { parseM3U, writeM3U } from "@iptv/playlist";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const VERSION = "1.2.1";
+
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static("public"));
-
-const VERSION = "1.2.1";
 
 const MAX_PLAYLIST_SIZE = 20 * 1024 * 1024;
 const MAX_CHANNELS = 50000;
@@ -24,20 +24,23 @@ const REQUEST_TIMEOUT = 20000;
 const cache = new Map();
 
 // ======================================
-// VALIDAÇÃO DE ENDEREÇOS IPv4
+// VALIDAÇÃO IPv4
 // ======================================
 
-function ipv4Number(ip) {
+function ipv4ToNumber(ip) {
     return ip.split(".").reduce(
-        (result, part) => (result * 256) + Number(part),
+        (value, part) => value * 256 + Number(part),
         0
     );
 }
 
-function inRange(ip, start, end) {
-    const value = ipv4Number(ip);
-    return value >= ipv4Number(start) &&
-           value <= ipv4Number(end);
+function isInRange(ip, start, end) {
+    const value = ipv4ToNumber(ip);
+
+    return (
+        value >= ipv4ToNumber(start) &&
+        value <= ipv4ToNumber(end)
+    );
 }
 
 function isPublicIPv4(ip) {
@@ -61,12 +64,12 @@ function isPublicIPv4(ip) {
     ];
 
     return !blockedRanges.some(([start, end]) =>
-        inRange(ip, start, end)
+        isInRange(ip, start, end)
     );
 }
 
 // ======================================
-// RESOLUÇÃO E VALIDAÇÃO DNS
+// VALIDAR URL E DNS
 // ======================================
 
 async function validateURL(value) {
@@ -84,10 +87,6 @@ async function validateURL(value) {
 
     if (url.username || url.password) {
         throw new Error("URLs com credenciais não são permitidas.");
-    }
-
-    if (url.port && !/^\d+$/.test(url.port)) {
-        throw new Error("Porta inválida.");
     }
 
     const hostname = url.hostname
@@ -114,21 +113,24 @@ async function validateURL(value) {
         let addresses;
 
         try {
-            // Este MVP aceita somente destinos IPv4 públicos.
             addresses = await dns.lookup(hostname, {
                 all: true,
                 family: 4,
                 verbatim: true
             });
         } catch {
-            throw new Error("Não foi possível resolver o endereço DNS.");
+            throw new Error("Não foi possível resolver o DNS.");
         }
 
-        if (!addresses.length) {
+        if (!addresses || addresses.length === 0) {
             throw new Error("Nenhum endereço IPv4 encontrado.");
         }
 
-        if (addresses.some(item => !isPublicIPv4(item.address))) {
+        if (
+            addresses.some(item =>
+                !isPublicIPv4(item.address)
+            )
+        ) {
             throw new Error("Endereço não permitido.");
         }
 
@@ -137,13 +139,13 @@ async function validateURL(value) {
 
     return {
         url,
-        address,
-        hostname
+        hostname,
+        address
     };
 }
 
 // ======================================
-// DOWNLOAD COM IP VALIDADO
+// CONEXÃO HTTP/HTTPS
 // ======================================
 
 function requestPlaylist(url, address, hostname) {
@@ -152,25 +154,33 @@ function requestPlaylist(url, address, hostname) {
             ? https
             : http;
 
-        const options = {
-            protocol: url.protocol,
-            hostname,
-            port: url.port || undefined,
-            path: url.pathname + url.search,
-            method: "GET",
-            agent: false,
-            headers: {
-                "User-Agent": "FutIPTV/1.2.1",
-                "Accept": "application/x-mpegURL, text/plain, */*"
-            },
-
-            // Usa o IP que acabou de ser validado.
-            lookup: (_host, _options, callback) => {
-                callback(null, address, 4);
-            }
+        const headers = {
+            "User-Agent": "FutIPTV/1.2.1",
+            "Accept": "application/x-mpegURL, text/plain, */*",
+            "Host": url.host
         };
 
-        if (url.protocol === "https:" && !net.isIP(hostname)) {
+        const options = {
+            protocol: url.protocol,
+
+            // Conecta diretamente ao IPv4 validado.
+            hostname: address,
+
+            port: url.port || (
+                url.protocol === "https:" ? 443 : 80
+            ),
+
+            path: url.pathname + url.search,
+            method: "GET",
+            headers,
+            agent: false
+        };
+
+        // Mantém SNI e validação TLS pelo domínio original.
+        if (
+            url.protocol === "https:" &&
+            !net.isIP(hostname)
+        ) {
             options.servername = hostname;
         }
 
@@ -179,6 +189,7 @@ function requestPlaylist(url, address, hostname) {
 
             if ([301, 302, 303, 307, 308].includes(status)) {
                 const location = response.headers.location;
+
                 response.resume();
 
                 resolve({
@@ -200,7 +211,11 @@ function requestPlaylist(url, address, hostname) {
 
             if (contentLength > MAX_PLAYLIST_SIZE) {
                 response.destroy();
-                reject(new Error("Playlist excede 20 MB."));
+
+                reject(
+                    new Error("Playlist excede 20 MB.")
+                );
+
                 return;
             }
 
@@ -214,6 +229,7 @@ function requestPlaylist(url, address, hostname) {
                     response.destroy(
                         new Error("Playlist excede 20 MB.")
                     );
+
                     return;
                 }
 
@@ -226,11 +242,17 @@ function requestPlaylist(url, address, hostname) {
                 });
             });
 
+            response.on("aborted", () => {
+                reject(new Error("Download interrompido."));
+            });
+
             response.on("error", reject);
         });
 
         req.setTimeout(REQUEST_TIMEOUT, () => {
-            req.destroy(new Error("Tempo limite de conexão excedido."));
+            req.destroy(
+                new Error("Tempo limite de conexão excedido.")
+            );
         });
 
         req.on("error", reject);
@@ -239,13 +261,17 @@ function requestPlaylist(url, address, hostname) {
 }
 
 // ======================================
-// IMPORTAÇÃO DA PLAYLIST
+// BAIXAR PLAYLIST
 // ======================================
 
 async function downloadPlaylist(initialURL) {
     let currentURL = initialURL;
 
-    for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
+    for (
+        let redirect = 0;
+        redirect <= MAX_REDIRECTS;
+        redirect++
+    ) {
         const validated = await validateURL(currentURL);
 
         const result = await requestPlaylist(
@@ -255,7 +281,10 @@ async function downloadPlaylist(initialURL) {
         );
 
         if (result.redirect !== undefined) {
-            if (!result.redirect || redirect === MAX_REDIRECTS) {
+            if (
+                !result.redirect ||
+                redirect === MAX_REDIRECTS
+            ) {
                 throw new Error("Redirecionamento inválido.");
             }
 
@@ -283,28 +312,38 @@ async function downloadPlaylist(initialURL) {
 }
 
 // ======================================
-// INTERPRETAÇÃO M3U
+// INTERPRETAR M3U
 // ======================================
 
 function parsePlaylist(content) {
     const parsed = parseM3U(content);
 
     if (!parsed || !Array.isArray(parsed.channels)) {
-        throw new Error("Não foi possível interpretar a playlist.");
+        throw new Error(
+            "Não foi possível interpretar a playlist."
+        );
     }
 
-    const originalChannels = parsed.channels.slice(0, MAX_CHANNELS);
+    const originalChannels = parsed.channels.slice(
+        0,
+        MAX_CHANNELS
+    );
 
     const channels = originalChannels
         .filter(channel => {
-            if (!channel || typeof channel.url !== "string") {
+            if (
+                !channel ||
+                typeof channel.url !== "string"
+            ) {
                 return false;
             }
 
             try {
                 const url = new URL(channel.url);
 
-                return ["http:", "https:"].includes(url.protocol);
+                return ["http:", "https:"].includes(
+                    url.protocol
+                );
             } catch {
                 return false;
             }
@@ -312,8 +351,13 @@ function parsePlaylist(content) {
         .map((channel, index) => ({
             ...channel,
             id: index + 1,
-            name: channel.name || channel.tvgName || "Canal sem nome",
-            category: channel.groupTitle || "Sem categoria",
+            name:
+                channel.name ||
+                channel.tvgName ||
+                "Canal sem nome",
+            category:
+                channel.groupTitle ||
+                "Sem categoria",
             logo: channel.tvgLogo || "",
             tvgId: channel.tvgId || "",
             url: channel.url
@@ -331,6 +375,7 @@ function parsePlaylist(content) {
 
     const exportPlaylist = {
         headers: parsed.headers || {},
+
         channels: channels.map(channel => {
             const {
                 id,
@@ -384,6 +429,10 @@ function saveCache(url, data) {
     });
 }
 
+// ======================================
+// CARREGAR PLAYLIST
+// ======================================
+
 async function loadPlaylist(url) {
     const cached = getCached(url);
 
@@ -397,8 +446,10 @@ async function loadPlaylist(url) {
     const content = await downloadPlaylist(url);
     const data = parsePlaylist(content);
 
-    if (!data.total) {
-        throw new Error("Nenhum canal válido foi encontrado.");
+    if (data.total === 0) {
+        throw new Error(
+            "Nenhum canal válido foi encontrado."
+        );
     }
 
     saveCache(url, data);
@@ -410,7 +461,7 @@ async function loadPlaylist(url) {
 }
 
 // ======================================
-// API: IMPORTAR PLAYLIST
+// API: IMPORTAR
 // ======================================
 
 app.post("/api/playlists/import", async (req, res) => {
@@ -430,10 +481,17 @@ app.post("/api/playlists/import", async (req, res) => {
 
         console.log("📡 Importando playlist...");
 
-        const result = await loadPlaylist(playlistURL.trim());
+        const result = await loadPlaylist(
+            playlistURL.trim()
+        );
 
-        console.log(`📺 ${result.data.total} canais`);
-        console.log(`📂 ${result.data.categoryCount} categorias`);
+        console.log(
+            `📺 ${result.data.total} canais`
+        );
+
+        console.log(
+            `📂 ${result.data.categoryCount} categorias`
+        );
 
         return res.json({
             success: true,
@@ -445,17 +503,22 @@ app.post("/api/playlists/import", async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Erro na importação:", error.message);
+        console.error(
+            "Erro na importação:",
+            error.message
+        );
 
         return res.status(400).json({
             success: false,
-            error: error.message || "Falha ao importar playlist."
+            error:
+                error.message ||
+                "Falha ao importar playlist."
         });
     }
 });
 
 // ======================================
-// API: EXPORTAR PLAYLIST
+// API: EXPORTAR
 // ======================================
 
 app.get("/api/playlists/export", async (req, res) => {
@@ -467,12 +530,18 @@ app.get("/api/playlists/export", async (req, res) => {
             !playlistURL.trim() ||
             playlistURL.trim().length > 2048
         ) {
-            return res.status(400).send("Informe uma URL válida.");
+            return res.status(400).send(
+                "Informe uma URL válida."
+            );
         }
 
-        const result = await loadPlaylist(playlistURL.trim());
+        const result = await loadPlaylist(
+            playlistURL.trim()
+        );
 
-        const m3u = writeM3U(result.data.exportPlaylist);
+        const m3u = writeM3U(
+            result.data.exportPlaylist
+        );
 
         res.setHeader(
             "Content-Disposition",
@@ -482,13 +551,17 @@ app.get("/api/playlists/export", async (req, res) => {
         res.type("application/x-mpegURL").send(m3u);
 
     } catch (error) {
-        console.error("Erro na exportação:", error.message);
+        console.error(
+            "Erro na exportação:",
+            error.message
+        );
+
         res.status(400).send(error.message);
     }
 });
 
 // ======================================
-// STATUS DO SERVIDOR
+// API: STATUS
 // ======================================
 
 app.get("/api/status", (_req, res) => {
@@ -504,5 +577,7 @@ app.get("/api/status", (_req, res) => {
 // ======================================
 
 app.listen(PORT, () => {
-    console.log(`🚀 FutIPTV v${VERSION} na porta ${PORT}`);
+    console.log(
+        `🚀 FutIPTV v${VERSION} na porta ${PORT}`
+    );
 });
