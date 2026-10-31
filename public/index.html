@@ -1,114 +1,304 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#08080d">
-  <meta name="description" content="FutIPTV - Seu centro de entretenimento.">
-  <title>FutIPTV</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08080d">
 
-  <link rel="stylesheet" href="style.css">
+    <meta name="description" content="FutIPTV - Seu centro de entretenimento.">
+    <meta name="application-name" content="FutIPTV">
+
+    <title>FutIPTV</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        [hidden] {
+            display: none !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .player-container video {
+            width: 100%;
+            height: auto;
+            max-height: 65vh;
+            background: #000;
+            display: block;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .player-info h2 {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .import-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .import-controls input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #importStatus,
+        #status {
+            overflow-wrap: anywhere;
+        }
+
+        .channel {
+            cursor: pointer;
+        }
+
+        .channel button {
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-icon">⚽</span>
-      <span>Fut<span>IPTV</span></span>
-    </div>
 
-    <button id="refreshBtn" type="button" aria-label="Atualizar canais">
-      ↻
-    </button>
-  </header>
+    <!-- CABEÇALHO -->
 
-  <main>
-    <section class="playlist-import">
-      <h2>📡 Minhas playlists</h2>
-      <p>Importe sua playlist M3U por URL.</p>
+    <header class="topbar">
 
-      <div class="import-controls">
-        <input
-          id="playlistUrl"
-          type="url"
-          placeholder="https://exemplo.com/playlist.m3u"
-          autocomplete="url"
+        <div class="brand">
+            <span class="brand-icon">⚽</span>
+
+            <span>
+                Fut<span>IPTV</span>
+            </span>
+        </div>
+
+        <button
+            id="refreshBtn"
+            type="button"
+            aria-label="Atualizar canais"
+            title="Atualizar canais"
+        >
+            ↻
+        </button>
+
+    </header>
+
+
+    <main>
+
+        <!-- IMPORTAÇÃO DE PLAYLIST -->
+
+        <section class="playlist-import">
+
+            <h2>📡 Minhas playlists</h2>
+
+            <p>
+                Importe sua playlist M3U por URL.
+            </p>
+
+            <div class="import-controls">
+
+                <input
+                    id="playlistUrl"
+                    type="url"
+                    placeholder="https://exemplo.com/playlist.m3u"
+                    autocomplete="url"
+                    aria-label="URL da playlist"
+                >
+
+                <button
+                    id="importPlaylistBtn"
+                    type="button"
+                >
+                    Importar
+                </button>
+
+            </div>
+
+            <p
+                id="importStatus"
+                role="status"
+                aria-live="polite"
+            >
+                Nenhuma playlist importada.
+            </p>
+
+        </section>
+
+
+        <!-- PESQUISA -->
+
+        <section class="search-area">
+
+            <input
+                id="searchInput"
+                type="search"
+                placeholder="🔎 Pesquisar canais..."
+                autocomplete="off"
+                aria-label="Pesquisar canais"
+            >
+
+        </section>
+
+
+        <!-- CATEGORIAS -->
+
+        <nav
+            id="categories"
+            class="categories"
+            aria-label="Categorias dos canais"
         >
 
-        <button id="importPlaylistBtn" type="button">
-          Importar
-        </button>
-      </div>
+            <button
+                class="category active"
+                type="button"
+                data-category="Todos"
+            >
+                Todos
+            </button>
 
-      <p id="importStatus" role="status" aria-live="polite"></p>
-    </section>
+        </nav>
 
-    <section class="search-area">
-      <input
-        id="searchInput"
-        type="search"
-        placeholder="Pesquisar canais..."
-        autocomplete="off"
-      >
-    </section>
 
-    <nav id="categories" class="categories" aria-label="Categorias">
-      <button class="category active" type="button" data-category="Todos">
-        Todos
-      </button>
-    </nav>
+        <!-- PLAYER -->
 
-    <section id="playerSection" class="player-section" hidden>
-      <div id="playerContainer" class="player-container">
-        <video
-          id="videoPlayer"
-          controls
-          playsinline
-          preload="metadata"
-        ></video>
-      </div>
+        <section
+            id="playerSection"
+            class="player-section"
+            hidden
+        >
 
-      <div class="player-info">
-        <h2 id="playerTitle">Reproduzindo</h2>
+            <div
+                id="playerContainer"
+                class="player-container"
+            >
 
-        <button id="fullscreenBtn" type="button">
-          ⛶ Tela cheia
-        </button>
+                <video
+                    id="videoPlayer"
+                    controls
+                    playsinline
+                    preload="metadata"
+                    webkit-playsinline
+                ></video>
 
-        <button id="closePlayer" type="button">
-          Fechar
-        </button>
-      </div>
-    </section>
+            </div>
 
-    <section class="channels-section">
-      <div class="section-heading">
-        <h2>Canais</h2>
-        <span id="channelCount">0 canais</span>
-      </div>
 
-      <p id="status" role="status" aria-live="polite"></p>
+            <div class="player-info">
 
-      <div id="loading" hidden>
-        Carregando canais...
-      </div>
+                <h2 id="playerTitle">
+                    Nenhum canal
+                </h2>
 
-      <div id="canais" class="channels-grid"></div>
+                <button
+                    id="fullscreenBtn"
+                    type="button"
+                >
+                    ⛶ Tela cheia
+                </button>
 
-      <div id="emptyState" hidden>
-        <h3>Nenhum canal encontrado</h3>
-        <p>Importe uma playlist ou tente outra pesquisa.</p>
-      </div>
-    </section>
-  </main>
+                <button
+                    id="closePlayer"
+                    type="button"
+                >
+                    ✕ Fechar
+                </button>
 
-  <footer>
-    <p>FutIPTV · 1.2.0</p>
-  </footer>
+            </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
-  <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
-  <script src="app.js?v=5"></script>
+        </section>
+
+
+        <!-- LISTA DE CANAIS -->
+
+        <section class="channels-section">
+
+            <div class="section-heading">
+
+                <h2>📺 Canais</h2>
+
+                <span id="channelCount">
+                    0 canais
+                </span>
+
+            </div>
+
+
+            <!-- STATUS -->
+
+            <p
+                id="status"
+                role="status"
+                aria-live="polite"
+            >
+                Importe uma playlist para começar.
+            </p>
+
+
+            <!-- CARREGAMENTO -->
+
+            <div id="loading" hidden>
+                <p>⏳ Carregando canais...</p>
+            </div>
+
+
+            <!-- CANAIS -->
+
+            <div
+                id="canais"
+                class="channels-grid"
+            ></div>
+
+
+            <!-- ESTADO VAZIO -->
+
+            <div id="emptyState" hidden>
+
+                <h3>Nenhum canal encontrado</h3>
+
+                <p>
+                    Importe uma playlist ou tente outra pesquisa.
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- RODAPÉ -->
+
+    <footer>
+
+        <p>
+            FutIPTV · 1.3.0
+        </p>
+
+        <small>
+            Multi-Player Engine
+        </small>
+
+    </footer>
+
+
+    <!-- APLICAÇÃO -->
+
+    <script src="app.js?v=6"></script>
+
 </body>
 </html>
