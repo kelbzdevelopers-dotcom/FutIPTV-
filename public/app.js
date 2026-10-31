@@ -1,9 +1,7 @@
 
 /* =====================================================
    FUTIPTV 1.3.0
-   SMART MULTI-PLAYER ENGINE
-   HLS.js | Shaka | DASH.js | mpegts.js
-   Video.js | Native HTML5
+   MULTI-PLAYER ENGINE
 ===================================================== */
 
 /* =========================
@@ -42,10 +40,12 @@ const LIBRARIES = {
     hls: "https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js",
     shaka: "https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.12.18/shaka-player.compiled.js",
     dash: "https://cdn.dashjs.org/latest/dash.all.min.js",
-    mpegts: "https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js",
-    videojs: "https://vjs.zencdn.net/8.23.4/video.min.js",
-    videojsCSS: "https://vjs.zencdn.net/8.23.4/video-js.min.css"
+    mpegts: "https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"
 };
+
+/* =========================
+   VARIÁVEIS
+========================= */
 
 let channels = [];
 
@@ -67,7 +67,6 @@ let hls = null;
 let dash = null;
 let shakaPlayer = null;
 let mpegtsPlayer = null;
-let videojsPlayer = null;
 
 let playerTimeout = null;
 let importController = null;
@@ -75,8 +74,9 @@ let importController = null;
 let currentChannel = null;
 let currentAttempts = [];
 let currentAttemptIndex = 0;
-let currentEngine = null;
 let playerSession = 0;
+
+const loadedScripts = new Map();
 
 /* =========================
    STATUS
@@ -94,10 +94,8 @@ function setImportStatus(message) {
 }
 
 /* =========================
-   CARREGAMENTO SOB DEMANDA
+   CARREGAR BIBLIOTECAS
 ========================= */
-
-const loadedScripts = new Map();
 
 function loadScript(url) {
     if (loadedScripts.has(url)) {
@@ -110,35 +108,19 @@ function loadScript(url) {
         script.src = url;
         script.async = true;
 
-        script.onload = () => resolve();
+        script.onload = resolve;
+
         script.onerror = () => {
             loadedScripts.delete(url);
-            reject(new Error("Não foi possível carregar uma biblioteca."));
+            reject(new Error("Falha ao carregar biblioteca."));
         };
 
         document.head.appendChild(script);
     });
 
     loadedScripts.set(url, promise);
+
     return promise;
-}
-
-function loadCSS(url) {
-    if (document.querySelector(`link[href="${url}"]`)) {
-        return Promise.resolve();
-    }
-
-    return new Promise((resolve, reject) => {
-        const link = document.createElement("link");
-
-        link.rel = "stylesheet";
-        link.href = url;
-
-        link.onload = resolve;
-        link.onerror = reject;
-
-        document.head.appendChild(link);
-    });
 }
 
 /* =========================
@@ -227,6 +209,7 @@ async function importPlaylist(url) {
         );
 
         setStatus(`⚽ ${channels.length} canais disponíveis`);
+
     } catch (error) {
         if (error.name === "AbortError") return;
 
@@ -234,6 +217,7 @@ async function importPlaylist(url) {
 
         setImportStatus("❌ " + error.message);
         setStatus("❌ Falha ao importar playlist.");
+
     } finally {
         if (loading) loading.style.display = "none";
 
@@ -245,6 +229,10 @@ async function importPlaylist(url) {
         importController = null;
     }
 }
+
+/* =========================
+   BOTÃO IMPORTAR
+========================= */
 
 if (importPlaylistBtn) {
     importPlaylistBtn.addEventListener("click", () => {
@@ -446,12 +434,11 @@ function toggleFavorite(url) {
 }
 
 /* =========================
-   IDENTIFICAR FORMATO
+   DETECTAR FORMATO
 ========================= */
 
-function detectFormat(url, channel = {}) {
+function detectFormat(url) {
     const value = String(url || "").toLowerCase();
-    const name = String(channel.name || "").toLowerCase();
 
     if (
         /\.m3u8(?:$|[?#])/i.test(value) ||
@@ -468,6 +455,10 @@ function detectFormat(url, channel = {}) {
         return "dash";
     }
 
+    if (/\.flv(?:$|[?#])/i.test(value)) {
+        return "flv";
+    }
+
     if (
         /\.ts(?:$|[?#])/i.test(value) ||
         value.includes("mpegts")
@@ -475,17 +466,11 @@ function detectFormat(url, channel = {}) {
         return "mpegts";
     }
 
-    if (
-        /\.flv(?:$|[?#])/i.test(value)
-    ) {
-        return "flv";
-    }
-
     return "direct";
 }
 
 /* =========================
-   INICIAR CANAL
+   ABRIR CANAL
 ========================= */
 
 function playChannel(channel) {
@@ -493,12 +478,12 @@ function playChannel(channel) {
 
     destroyPlayer();
 
-    playerSession++;
     const session = playerSession;
 
     currentChannel = channel;
 
     if (playerSection) {
+        playerSection.hidden = false;
         playerSection.classList.remove("hidden");
         playerSection.style.display = "block";
     }
@@ -507,14 +492,14 @@ function playChannel(channel) {
         nowPlaying.textContent = "▶ " + channel.name;
     }
 
-    const format = detectFormat(channel.url, channel);
+    const format = detectFormat(channel.url);
 
     const plans = {
         hls: ["hls", "native"],
         dash: ["shaka", "dash"],
-        mpegts: ["mpegts", "native"],
+        mpegts: ["mpegts"],
         flv: ["mpegts"],
-        direct: ["native", "videojs"]
+        direct: ["native"]
     };
 
     currentAttempts = plans[format] || plans.direct;
@@ -526,7 +511,7 @@ function playChannel(channel) {
 }
 
 /* =========================
-   FALLBACK INTELIGENTE
+   FALLBACK
 ========================= */
 
 async function tryNextPlayer(session) {
@@ -536,14 +521,12 @@ async function tryNextPlayer(session) {
 
     if (currentAttemptIndex >= currentAttempts.length) {
         showPlayerError(
-            "❌ Não foi possível reproduzir este canal. O endereço pode estar indisponível ou ser incompatível."
+            "❌ Não foi possível reproduzir este canal. Verifique o endereço ou a compatibilidade da transmissão."
         );
         return;
     }
 
     const engine = currentAttempts[currentAttemptIndex++];
-
-    currentEngine = engine;
 
     destroyEngines();
 
@@ -551,36 +534,19 @@ async function tryNextPlayer(session) {
     video.removeAttribute("src");
     video.load();
 
-    setStatus(`⚙️ Tentando player: ${engine.toUpperCase()}...`);
+    setStatus(`⚙️ Iniciando ${engine.toUpperCase()}...`);
 
     try {
-        switch (engine) {
-            case "hls":
-                await playHLS(currentChannel, session);
-                break;
-
-            case "shaka":
-                await playShaka(currentChannel, session);
-                break;
-
-            case "dash":
-                await playDASH(currentChannel, session);
-                break;
-
-            case "mpegts":
-                await playMPEGTS(currentChannel, session);
-                break;
-
-            case "native":
-                await playNative(currentChannel, session);
-                break;
-
-            case "videojs":
-                await playVideoJS(currentChannel, session);
-                break;
-
-            default:
-                throw new Error("Player desconhecido.");
+        if (engine === "hls") {
+            await playHLS(currentChannel, session);
+        } else if (engine === "native") {
+            await playNative(currentChannel, session);
+        } else if (engine === "shaka") {
+            await playShaka(currentChannel, session);
+        } else if (engine === "dash") {
+            await playDASH(currentChannel, session);
+        } else if (engine === "mpegts") {
+            await playMPEGTS(currentChannel, session);
         }
     } catch (error) {
         console.error(`${engine}:`, error);
@@ -592,7 +558,7 @@ async function tryNextPlayer(session) {
 }
 
 /* =========================
-   EVENTOS DE REPRODUÇÃO
+   EVENTOS DO VÍDEO
 ========================= */
 
 function setupVideoEvents(engine, session) {
@@ -607,8 +573,7 @@ function setupVideoEvents(engine, session) {
     video.onerror = () => {
         if (session !== playerSession) return;
 
-        console.warn("Erro HTML5:", video.error);
-
+        console.warn("Erro de reprodução:", video.error);
         tryNextPlayer(session);
     };
 
@@ -617,7 +582,7 @@ function setupVideoEvents(engine, session) {
             session === playerSession &&
             video.readyState < 2
         ) {
-            console.warn("Timeout:", engine);
+            console.warn("Tempo limite:", engine);
             tryNextPlayer(session);
         }
     }, PLAYER_TIMEOUT);
@@ -627,12 +592,13 @@ function requestPlayback(session) {
     if (session !== playerSession) return;
 
     video.play().catch(() => {
-        setStatus("▶ Toque em Play para iniciar.");
+        // Reprodução automática bloqueada.
+        // Não exibir mensagem ao usuário.
     });
 }
 
 /* =========================
-   HLS.JS + HLS NATIVO
+   HLS.JS
 ========================= */
 
 async function playHLS(channel, session) {
@@ -660,7 +626,7 @@ async function playHLS(channel, session) {
     hls.on(Hls.Events.ERROR, (event, data) => {
         if (session !== playerSession || !data.fatal) return;
 
-        console.error("HLS fatal:", data);
+        console.error("HLS:", data);
         tryNextPlayer(session);
     });
 
@@ -668,10 +634,16 @@ async function playHLS(channel, session) {
     hls.attachMedia(video);
 }
 
+/* =========================
+   HTML5 NATIVO
+========================= */
+
 async function playNative(channel, session) {
+    const format = detectFormat(channel.url);
+
     if (
-        !video.canPlayType("application/vnd.apple.mpegurl") &&
-        detectFormat(channel.url) === "hls"
+        format === "hls" &&
+        !video.canPlayType("application/vnd.apple.mpegurl")
     ) {
         throw new Error("HLS nativo não suportado.");
     }
@@ -700,7 +672,7 @@ async function playShaka(channel, session) {
     shaka.polyfill.installAll();
 
     if (!shaka.Player.isBrowserSupported()) {
-        throw new Error("Shaka não suportado neste navegador.");
+        throw new Error("Shaka incompatível.");
     }
 
     shakaPlayer = new shaka.Player(video);
@@ -716,9 +688,7 @@ async function playShaka(channel, session) {
 
     await shakaPlayer.load(channel.url);
 
-    if (session === playerSession) {
-        requestPlayback(session);
-    }
+    requestPlayback(session);
 }
 
 /* =========================
@@ -763,99 +733,37 @@ async function playMPEGTS(channel, session) {
         !window.mpegts ||
         !mpegts.isSupported()
     ) {
-        throw new Error("MPEG-TS não suportado.");
+        throw new Error("MPEG-TS incompatível.");
     }
 
     const format = detectFormat(channel.url);
 
-    const type = format === "flv" ? "flv" : "mpegts";
-
     mpegtsPlayer = mpegts.createPlayer({
-        type,
+        type: format === "flv" ? "flv" : "mpegts",
         isLive: true,
         url: channel.url
     }, {
         enableWorker: false,
-        lazyLoad: true,
-        liveBufferLatencyChasing: true
+        lazyLoad: true
     });
 
     setupVideoEvents("mpegts.js", session);
 
     mpegtsPlayer.on(
         mpegts.Events.ERROR,
-        (type, detail, info) => {
+        (type, detail) => {
             if (session !== playerSession) return;
 
-            console.error("mpegts.js:", type, detail, info);
+            console.error("mpegts.js:", type, detail);
             tryNextPlayer(session);
         }
     );
 
     mpegtsPlayer.attachMediaElement(video);
     mpegtsPlayer.load();
+
     mpegtsPlayer.play().catch(() => {
-        setStatus("▶ Toque em Play para iniciar.");
-    });
-}
-
-/* =========================
-   VIDEO.JS
-========================= */
-
-async function playVideoJS(channel, session) {
-    await Promise.all([
-        loadCSS(LIBRARIES.videojsCSS),
-        loadScript(LIBRARIES.videojs)
-    ]);
-
-    if (session !== playerSession) return;
-
-    if (!window.videojs) {
-        throw new Error("Video.js não carregado.");
-    }
-
-    videojsPlayer = videojs(video, {
-        controls: true,
-        autoplay: false,
-        preload: "metadata",
-        fluid: true,
-        liveui: true,
-        controlBar: {
-            pictureInPictureToggle: true
-        }
-    });
-
-    videojsPlayer.src({
-        src: channel.url,
-        type: "video/mp4"
-    });
-
-    videojsPlayer.on("error", () => {
-        if (session !== playerSession) return;
-
-        console.error("Video.js:", videojsPlayer.error());
-        tryNextPlayer(session);
-    });
-
-    videojsPlayer.on("playing", () => {
-        if (session !== playerSession) return;
-
-        clearTimeout(playerTimeout);
-        setStatus(`▶ ${channel.name} · Video.js`);
-    });
-
-    playerTimeout = setTimeout(() => {
-        if (
-            session === playerSession &&
-            video.readyState < 2
-        ) {
-            tryNextPlayer(session);
-        }
-    }, PLAYER_TIMEOUT);
-
-    videojsPlayer.play().catch(() => {
-        setStatus("▶ Toque em Play para iniciar.");
+        // Sem mensagem de reprodução manual.
     });
 }
 
@@ -870,6 +778,7 @@ function destroyEngines() {
         } catch (error) {
             console.warn(error);
         }
+
         hls = null;
     }
 
@@ -879,6 +788,7 @@ function destroyEngines() {
         } catch (error) {
             console.warn(error);
         }
+
         dash = null;
     }
 
@@ -888,6 +798,7 @@ function destroyEngines() {
         } catch (error) {
             console.warn(error);
         }
+
         shakaPlayer = null;
     }
 
@@ -900,16 +811,8 @@ function destroyEngines() {
         } catch (error) {
             console.warn(error);
         }
-        mpegtsPlayer = null;
-    }
 
-    if (videojsPlayer) {
-        try {
-            videojsPlayer.dispose();
-        } catch (error) {
-            console.warn(error);
-        }
-        videojsPlayer = null;
+        mpegtsPlayer = null;
     }
 
     if (video) {
@@ -934,22 +837,20 @@ function destroyPlayer() {
     currentChannel = null;
     currentAttempts = [];
     currentAttemptIndex = 0;
-    currentEngine = null;
 }
 
 /* =========================
-   ERRO
+   ERROS
 ========================= */
 
 function showPlayerError(message) {
     clearTimeout(playerTimeout);
-
-    console.error(message);
     setStatus(message);
+    console.error(message);
 }
 
 /* =========================
-   FULLSCREEN
+   TELA CHEIA
 ========================= */
 
 async function ativarTelaCheia() {
@@ -1006,6 +907,7 @@ if (closePlayer) {
         destroyPlayer();
 
         if (playerSection) {
+            playerSection.hidden = true;
             playerSection.classList.add("hidden");
             playerSection.style.display = "none";
         }
