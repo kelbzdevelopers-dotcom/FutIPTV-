@@ -1,52 +1,31 @@
-/* =====================================================
-   FUTIPTV
-   APP.JS
-   ===================================================== */
 
+/* =====================================================
+   FUTIPTV 1.2.0
+   APP.JS
+===================================================== */
 
 /* =========================
    ELEMENTOS
 ========================= */
 
-const video =
-    document.getElementById("videoPlayer");
+const video = document.getElementById("videoPlayer");
+const channelList = document.getElementById("canais");
+const reloadBtn = document.getElementById("refreshBtn");
+const nowPlaying = document.getElementById("playerTitle");
+const channelCount = document.getElementById("channelCount");
+const loading = document.getElementById("loading");
+const status = document.getElementById("status");
+const searchInput = document.getElementById("searchInput");
+const playerSection = document.getElementById("playerSection");
+const playerContainer = document.getElementById("playerContainer");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+const closePlayer = document.getElementById("closePlayer");
+const categories = document.getElementById("categories");
 
-const channelList =
-    document.getElementById("canais");
-
-const reloadBtn =
-    document.getElementById("refreshBtn");
-
-const nowPlaying =
-    document.getElementById("playerTitle");
-
-const channelCount =
-    document.getElementById("channelCount");
-
-const loading =
-    document.getElementById("loading");
-
-const status =
-    document.getElementById("status");
-
-const searchInput =
-    document.getElementById("searchInput");
-
-const playerSection =
-    document.getElementById("playerSection");
-
-const playerContainer =
-    document.getElementById("playerContainer");
-
-const fullscreenBtn =
-    document.getElementById("fullscreenBtn");
-
-const closePlayer =
-    document.getElementById("closePlayer");
-
-const categories =
-    document.getElementById("categories");
-
+const playlistUrlInput = document.getElementById("playlistUrl");
+const importPlaylistBtn = document.getElementById("importPlaylistBtn");
+const importStatus = document.getElementById("importStatus");
+const emptyState = document.getElementById("emptyState");
 
 /* =========================
    VARIÁVEIS
@@ -55,482 +34,190 @@ const categories =
 let channels = [];
 
 let favorites = JSON.parse(
-    localStorage.getItem(
-        "futiptv_favorites"
-    ) || "[]"
+    localStorage.getItem("futiptv_favorites") || "[]"
 );
 
 let currentCategory = "Todos";
-
-let currentTab = "all";
-
 let hls = null;
-
 let dash = null;
-
 let playerTimeout = null;
+let importController = null;
 
+const SAVED_PLAYLIST_KEY = "futiptv_playlist_url";
 
 /* =====================================================
    STATUS
 ===================================================== */
 
-function setStatus(text) {
-
-    if (status) {
-        status.textContent = text;
-    }
-
-    console.log(
-        "FutIPTV:",
-        text
-    );
+function setStatus(message) {
+    if (status) status.textContent = message;
+    console.log("FutIPTV:", message);
 }
 
+function setImportStatus(message) {
+    if (importStatus) {
+        importStatus.textContent = message;
+    }
+}
 
 /* =====================================================
-   FULLSCREEN
+   IMPORTAÇÃO M3U
 ===================================================== */
 
-async function ativarTelaCheia() {
+async function importPlaylist(url) {
 
-    if (!video) {
+    if (!url) {
+        setImportStatus("Informe uma URL M3U.");
         return;
     }
 
     try {
+        new URL(url);
 
-        /*
-         * Android/WebView
-         *
-         * Alguns WebViews suportam
-         * diretamente o fullscreen nativo
-         * do elemento <video>.
-         */
-
-        if (
-            typeof video.webkitEnterFullscreen ===
-            "function"
-        ) {
-
-            video.webkitEnterFullscreen();
-
-            return;
+        if (!["http:", "https:"].includes(new URL(url).protocol)) {
+            throw new Error("Use uma URL HTTP ou HTTPS.");
         }
 
-
-        /*
-         * Fullscreen API padrão
-         */
-
-        if (
-            typeof video.requestFullscreen ===
-            "function"
-        ) {
-
-            await video.requestFullscreen();
-
-            return;
-        }
-
-
-        /*
-         * Tenta colocar o container
-         * inteiro em fullscreen.
-         */
-
-        if (
-            playerContainer &&
-            typeof playerContainer.requestFullscreen ===
-            "function"
-        ) {
-
-            await playerContainer.requestFullscreen();
-
-            return;
-        }
-
-
-        /*
-         * WebKit
-         */
-
-        if (
-            typeof video.webkitRequestFullscreen ===
-            "function"
-        ) {
-
-            video.webkitRequestFullscreen();
-
-            return;
-        }
-
-
-        /*
-         * Microsoft antigo
-         */
-
-        if (
-            typeof video.msRequestFullscreen ===
-            "function"
-        ) {
-
-            video.msRequestFullscreen();
-
-            return;
-        }
-
-
-        console.warn(
-            "Fullscreen não suportado."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao entrar em fullscreen:",
-            error
-        );
-
+    } catch {
+        setImportStatus("URL inválida.");
+        return;
     }
-}
 
+    if (importController) {
+        importController.abort();
+    }
 
-/* =========================
-   SAIR DO FULLSCREEN
-========================= */
+    importController = new AbortController();
 
-async function sairDaTelaCheia() {
+    if (loading) loading.style.display = "block";
+
+    if (importPlaylistBtn) {
+        importPlaylistBtn.disabled = true;
+        importPlaylistBtn.textContent = "Importando...";
+    }
+
+    setImportStatus("📡 Baixando playlist...");
+    setStatus("📥 Importando canais...");
 
     try {
 
-        if (
-            document.fullscreenElement
-        ) {
+        const response = await fetch("/api/playlists/import", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url }),
+            signal: importController.signal
+        });
 
-            await document.exitFullscreen();
+        const data = await response.json();
 
-            return;
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Falha na importação.");
         }
 
-
-        if (
-            document.webkitFullscreenElement
-        ) {
-
-            if (
-                document.webkitExitFullscreen
-            ) {
-
-                document.webkitExitFullscreen();
-            }
-
-            return;
+        if (!Array.isArray(data.channels)) {
+            throw new Error("Resposta de canais inválida.");
         }
+
+        channels = data.channels.map((channel, index) => ({
+            ...channel,
+            id: channel.id || index + 1,
+            name: channel.name || channel.tvgName || "Canal sem nome",
+            logo: channel.logo || channel.tvgLogo || "",
+            group: channel.category || channel.groupTitle || "Sem categoria",
+            url: channel.url
+        }));
+
+        if (!channels.length) {
+            throw new Error("Nenhum canal encontrado.");
+        }
+
+        localStorage.setItem(SAVED_PLAYLIST_KEY, url);
+
+        if (playlistUrlInput) {
+            playlistUrlInput.value = url;
+        }
+
+        currentCategory = "Todos";
+
+        renderCategories();
+        renderChannels();
+
+        setImportStatus(
+            `✅ ${data.total || channels.length} canais importados!`
+        );
+
+        setStatus(
+            `⚽ ${channels.length} canais disponíveis`
+        );
 
     } catch (error) {
 
-        console.error(
-            "Erro ao sair do fullscreen:",
-            error
-        );
-    }
-}
+        if (error.name === "AbortError") return;
 
+        console.error("Importação:", error);
 
-/* =========================
-   BOTÃO FULLSCREEN
-========================= */
+        setImportStatus("❌ " + error.message);
+        setStatus("❌ Falha ao importar playlist.");
 
-if (fullscreenBtn) {
+    } finally {
 
-    fullscreenBtn.addEventListener(
-        "click",
-        async function(event) {
+        if (loading) loading.style.display = "none";
 
-            event.preventDefault();
-
-            event.stopPropagation();
-
-            await ativarTelaCheia();
-
+        if (importPlaylistBtn) {
+            importPlaylistBtn.disabled = false;
+            importPlaylistBtn.textContent = "Importar";
         }
-    );
-}
 
-
-/* =========================
-   EVENTOS FULLSCREEN
-========================= */
-
-function fullscreenMudou() {
-
-    const ativo =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement;
-
-    if (fullscreenBtn) {
-
-        fullscreenBtn.textContent =
-            ativo
-                ? "⛶"
-                : "⛶";
+        importController = null;
     }
 }
-
-
-document.addEventListener(
-    "fullscreenchange",
-    fullscreenMudou
-);
-
-
-document.addEventListener(
-    "webkitfullscreenchange",
-    fullscreenMudou
-);
-
 
 /* =====================================================
-   PLAYLIST
+   BOTÃO IMPORTAR
+===================================================== */
+
+if (importPlaylistBtn) {
+    importPlaylistBtn.addEventListener("click", () => {
+        importPlaylist(playlistUrlInput?.value.trim());
+    });
+}
+
+if (playlistUrlInput) {
+    playlistUrlInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            importPlaylist(playlistUrlInput.value.trim());
+        }
+    });
+}
+
+/* =====================================================
+   CARREGAR PLAYLIST SALVA
 ===================================================== */
 
 async function loadPlaylist() {
 
-    setStatus(
-        "📥 Carregando canais..."
-    );
+    const savedURL = localStorage.getItem(SAVED_PLAYLIST_KEY);
 
-    if (loading) {
+    if (savedURL) {
+        if (playlistUrlInput) {
+            playlistUrlInput.value = savedURL;
+        }
 
-        loading.style.display =
-            "block";
+        await importPlaylist(savedURL);
+        return;
     }
 
+    if (loading) loading.style.display = "none";
 
-    try {
+    setStatus("📡 Importe uma playlist para começar.");
 
-        const response =
-            await fetch(
-                "/api/playlist?t=" +
-                Date.now()
-            );
+    setImportStatus("Nenhuma playlist importada.");
 
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " +
-                response.status
-            );
-        }
-
-
-        const text =
-            await response.text();
-
-
-        if (
-            !text.includes(
-                "#EXTINF"
-            )
-        ) {
-
-            throw new Error(
-                "Nenhum canal encontrado."
-            );
-        }
-
-
-        channels =
-            parseM3U(text);
-
-
-        console.log(
-            "Canais encontrados:",
-            channels.length
-        );
-
-
-        if (!channels.length) {
-
-            throw new Error(
-                "Nenhum canal válido."
-            );
-        }
-
-
-        setStatus(
-            "⚽ " +
-            channels.length +
-            " canais"
-        );
-
-
-        renderCategories();
-
-        renderChannels();
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        setStatus(
-            "❌ " +
-            error.message
-        );
-
-
-        if (channelList) {
-
-            channelList.innerHTML = `
-                <div style="
-                    padding:20px;
-                    text-align:center;
-                ">
-                    ❌ Erro ao carregar canais.
-                    <br><br>
-                    <small>
-                        ${escapeHTML(
-                            error.message
-                        )}
-                    </small>
-                </div>
-            `;
-        }
-
-    } finally {
-
-        if (loading) {
-
-            loading.style.display =
-                "none";
-        }
-    }
+    renderCategories();
+    renderChannels();
 }
-
-
-/* =====================================================
-   PARSER M3U
-===================================================== */
-
-function parseM3U(text) {
-
-    const lines =
-        text.split(/\r?\n/);
-
-    const result = [];
-
-    let current = null;
-
-
-    for (
-        let i = 0;
-        i < lines.length;
-        i++
-    ) {
-
-        const line =
-            lines[i].trim();
-
-
-        if (!line) {
-            continue;
-        }
-
-
-        if (
-            line
-                .toUpperCase()
-                .startsWith("#EXTINF")
-        ) {
-
-            current = {
-
-                name: "Canal",
-
-                logo: "",
-
-                group: "",
-
-                url: ""
-            };
-
-
-            const comma =
-                line.lastIndexOf(",");
-
-
-            if (comma !== -1) {
-
-                current.name =
-                    line
-                        .substring(
-                            comma + 1
-                        )
-                        .trim();
-            }
-
-
-            const logo =
-                line.match(
-                    /tvg-logo=["']([^"']*)["']/i
-                );
-
-
-            if (logo) {
-
-                current.logo =
-                    logo[1];
-            }
-
-
-            const group =
-                line.match(
-                    /group-title=["']([^"']*)["']/i
-                );
-
-
-            if (group) {
-
-                current.group =
-                    group[1];
-            }
-
-
-            continue;
-        }
-
-
-        if (
-            current &&
-            !line.startsWith("#")
-        ) {
-
-            if (
-                !line.includes(
-                    "[NO PUBLIC STREAM]"
-                )
-            ) {
-
-                current.url =
-                    line;
-
-                result.push(
-                    current
-                );
-            }
-
-
-            current = null;
-        }
-    }
-
-
-    return result;
-}
-
 
 /* =====================================================
    CATEGORIAS
@@ -538,97 +225,44 @@ function parseM3U(text) {
 
 function renderCategories() {
 
-    if (!categories) {
-        return;
-    }
+    if (!categories) return;
 
+    categories.innerHTML = "";
 
     const groups = [
         ...new Set(
-            channels
-                .map(
-                    channel =>
-                        channel.group
-                )
-                .filter(Boolean)
+            channels.map(channel => channel.group || "Sem categoria")
         )
-    ];
+    ].sort((a, b) => a.localeCompare(b));
 
+    addCategoryButton("Todos");
 
-    categories.innerHTML =
-        "";
-
-
-    addCategoryButton(
-        "Todos"
-    );
-
-
-    groups.forEach(
-        group => {
-
-            addCategoryButton(
-                group
-            );
-        }
-    );
+    groups.forEach(group => {
+        addCategoryButton(group);
+    });
 }
 
+function addCategoryButton(name) {
 
-/* =========================
-   BOTÃO DE CATEGORIA
-========================= */
-
-function addCategoryButton(
-    name
-) {
-
-    const button =
-        document.createElement(
-            "button"
-        );
-
+    const button = document.createElement("button");
 
     button.className =
-        "category" +
-        (
-            currentCategory === name
-                ? " active"
-                : ""
-        );
+        "category" + (currentCategory === name ? " active" : "");
 
+    button.textContent = name;
+    button.dataset.category = name;
+    button.type = "button";
 
-    button.textContent =
-        name;
+    button.addEventListener("click", () => {
 
+        currentCategory = name;
 
-    button.dataset.category =
-        name;
+        renderCategories();
+        renderChannels();
+    });
 
-
-    button.type =
-        "button";
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            currentCategory =
-                name;
-
-            renderCategories();
-
-            renderChannels();
-        }
-    );
-
-
-    categories.appendChild(
-        button
-    );
+    categories.appendChild(button);
 }
-
 
 /* =====================================================
    CANAIS
@@ -636,748 +270,108 @@ function addCategoryButton(
 
 function renderChannels() {
 
-    if (!channelList) {
-        return;
-    }
+    if (!channelList) return;
 
+    const search = searchInput
+        ? searchInput.value.toLowerCase().trim()
+        : "";
 
-    const search =
-        searchInput
-            ? searchInput.value
-                .toLowerCase()
-                .trim()
-            : "";
+    const filtered = channels.filter(channel => {
 
+        const name = String(channel.name || "").toLowerCase();
+        const group = String(channel.group || "").toLowerCase();
 
-    const filtered =
-        channels.filter(
-            channel => {
+        const matchesSearch =
+            !search ||
+            name.includes(search) ||
+            group.includes(search);
 
-                const name =
-                    String(
-                        channel.name || ""
-                    ).toLowerCase();
+        const matchesCategory =
+            currentCategory === "Todos" ||
+            channel.group === currentCategory;
 
+        return matchesSearch && matchesCategory;
+    });
 
-                const group =
-                    String(
-                        channel.group || ""
-                    ).toLowerCase();
-
-
-                const matchesSearch =
-                    !search ||
-                    name.includes(
-                        search
-                    ) ||
-                    group.includes(
-                        search
-                    );
-
-
-                const matchesCategory =
-                    currentCategory ===
-                        "Todos" ||
-                    channel.group ===
-                        currentCategory;
-
-
-                const matchesFavorite =
-                    currentTab !==
-                        "favorites" ||
-                    favorites.includes(
-                        channel.url
-                    );
-
-
-                return (
-                    matchesSearch &&
-                    matchesCategory &&
-                    matchesFavorite
-                );
-            }
-        );
-
-
-    channelList.innerHTML =
-        "";
-
+    channelList.innerHTML = "";
 
     if (channelCount) {
-
         channelCount.textContent =
-            filtered.length +
-            (
-                filtered.length === 1
-                    ? " canal"
-                    : " canais"
-            );
+            `${filtered.length} ${filtered.length === 1 ? "canal" : "canais"}`;
     }
 
+    if (emptyState) {
+        emptyState.classList.toggle("hidden", filtered.length > 0);
+    }
 
     if (!filtered.length) {
-
-        channelList.innerHTML = `
-            <div style="
-                padding:20px;
-                text-align:center;
-            ">
-                ⚠️ Nenhum canal encontrado.
-            </div>
-        `;
-
         return;
     }
 
+    const fragment = document.createDocumentFragment();
 
-    filtered.forEach(
-        channel => {
+    filtered.forEach(channel => {
 
-            const item =
-                document.createElement(
-                    "div"
-                );
+        const item = document.createElement("div");
+        item.className = "channel";
 
+        const logoContainer = document.createElement("div");
+        logoContainer.className = "channel-logo";
 
-            item.className =
-                "channel";
+        if (channel.logo) {
 
+            const image = document.createElement("img");
 
-            const favorite =
-                favorites.includes(
-                    channel.url
-                );
+            image.src = channel.logo;
+            image.alt = channel.name;
+            image.loading = "lazy";
 
+            image.onerror = () => {
+                image.remove();
+                logoContainer.textContent = "⚽";
+            };
 
-            item.innerHTML = `
+            logoContainer.appendChild(image);
 
-                <div class="channel-logo">
-
-                    ${
-                        channel.logo
-                        ?
-                        `
-                        <img
-                            src="${escapeHTML(
-                                channel.logo
-                            )}"
-                            loading="lazy"
-                            onerror="
-                                this.style.display='none'
-                            "
-                        >
-                        `
-                        :
-                        "⚽"
-                    }
-
-                </div>
-
-
-                <div class="channel-info">
-
-                    <strong>
-                        ${escapeHTML(
-                            channel.name
-                        )}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(
-                            channel.group ||
-                            "Esportes"
-                        )}
-                    </small>
-
-                </div>
-
-
-                <button
-                    class="favorite"
-                    type="button"
-                    aria-label="Favoritar canal"
-                >
-                    ${
-                        favorite
-                            ? "⭐"
-                            : "☆"
-                    }
-                </button>
-
-            `;
-
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    playChannel(
-                        channel
-                    );
-                }
-            );
-
-
-            const favoriteButton =
-                item.querySelector(
-                    ".favorite"
-                );
-
-
-            if (favoriteButton) {
-
-                favoriteButton.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-                        toggleFavorite(
-                            channel.url
-                        );
-                    }
-                );
-            }
-
-
-            channelList.appendChild(
-                item
-            );
+        } else {
+            logoContainer.textContent = "⚽";
         }
-    );
+
+        const info = document.createElement("div");
+        info.className = "channel-info";
+
+        const name = document.createElement("strong");
+        name.textContent = channel.name;
+
+        const group = document.createElement("small");
+        group.textContent = channel.group;
+
+        info.append(name, group);
+
+        const favoriteButton = document.createElement("button");
+        favoriteButton.className = "favorite";
+        favoriteButton.type = "button";
+        favoriteButton.textContent =
+            favorites.includes(channel.url) ? "⭐" : "☆";
+
+        favoriteButton.setAttribute("aria-label", "Favoritar canal");
+
+        favoriteButton.addEventListener("click", event => {
+            event.stopPropagation();
+            toggleFavorite(channel.url);
+        });
+
+        item.append(logoContainer, info, favoriteButton);
+
+        item.addEventListener("click", () => {
+            playChannel(channel);
+        });
+
+        fragment.appendChild(item);
+    });
+
+    channelList.appendChild(fragment);
 }
-
-
-/* =====================================================
-   PLAYER
-===================================================== */
-
-function playChannel(channel) {
-
-    if (!video) {
-
-        console.error(
-            "videoPlayer não encontrado."
-        );
-
-        return;
-    }
-
-
-    console.log(
-        "🎬 Abrindo:",
-        channel.name
-    );
-
-
-    console.log(
-        "🔗 URL:",
-        channel.url
-    );
-
-
-    /* MOSTRAR PLAYER */
-
-    if (playerSection) {
-
-        playerSection.classList.remove(
-            "hidden"
-        );
-
-        playerSection.style.display =
-            "block";
-    }
-
-
-    if (nowPlaying) {
-
-        nowPlaying.textContent =
-            "▶ " +
-            channel.name;
-    }
-
-
-    /* LIMPAR PLAYER */
-
-    destroyPlayer();
-
-
-    const url =
-        channel.url.toLowerCase();
-
-
-    /* DETECTAR DASH */
-
-    const isDASH =
-        url.includes(".mpd") ||
-        url.includes("manifest.mpd") ||
-        url.includes("dash");
-
-
-    /* DETECTAR HLS */
-
-    const isHLS =
-        url.includes(".m3u8") ||
-        url.includes("playlist") ||
-        url.includes("hls");
-
-
-    console.log(
-        "Formato:",
-        isDASH
-            ? "DASH"
-            : isHLS
-                ? "HLS"
-                : "DESCONHECIDO"
-    );
-
-
-    if (isDASH) {
-
-        playDASH(
-            channel
-        );
-
-        return;
-    }
-
-
-    if (isHLS) {
-
-        playHLS(
-            channel
-        );
-
-        return;
-    }
-
-
-    playHLS(
-        channel
-    );
-}
-
-
-/* =====================================================
-   HLS
-===================================================== */
-
-function playHLS(channel) {
-
-    const url =
-        channel.url;
-
-
-    setStatus(
-        "📺 Abrindo HLS..."
-    );
-
-
-    if (
-        window.Hls &&
-        Hls.isSupported()
-    ) {
-
-        console.log(
-            "HLS.js disponível."
-        );
-
-
-        hls =
-            new Hls({
-
-                enableWorker: true,
-
-                lowLatencyMode: true,
-
-                backBufferLength: 30
-            });
-
-
-        hls.loadSource(
-            url
-        );
-
-
-        hls.attachMedia(
-            video
-        );
-
-
-        hls.on(
-            Hls.Events.MANIFEST_PARSED,
-            () => {
-
-                console.log(
-                    "✅ HLS carregado."
-                );
-
-
-                clearTimeout(
-                    playerTimeout
-                );
-
-
-                setStatus(
-                    "▶ " +
-                    channel.name
-                );
-
-
-                video.play()
-                    .catch(
-                        () => {
-
-                            setStatus(
-                                "▶ Toque em Play"
-                            );
-                        }
-                    );
-            }
-        );
-
-
-        hls.on(
-            Hls.Events.ERROR,
-            (
-                event,
-                data
-            ) => {
-
-                console.error(
-                    "HLS:",
-                    data
-                );
-
-
-                if (
-                    data.fatal
-                ) {
-
-                    clearTimeout(
-                        playerTimeout
-                    );
-
-
-                    showPlayerError(
-                        "❌ Este canal HLS não está disponível."
-                    );
-
-
-                    destroyHLS();
-                }
-            }
-        );
-
-
-        startTimeout(
-            "⏳ O canal HLS demorou demais para responder."
-        );
-
-
-        return;
-    }
-
-
-    /* HLS NATIVO */
-
-    if (
-        video.canPlayType(
-            "application/vnd.apple.mpegurl"
-        )
-    ) {
-
-        video.src =
-            url;
-
-
-        video.addEventListener(
-            "loadedmetadata",
-            () => {
-
-                clearTimeout(
-                    playerTimeout
-                );
-
-
-                video.play()
-                    .catch(
-                        () => {}
-                    );
-
-            },
-            {
-                once: true
-            }
-        );
-
-
-        startTimeout(
-            "⏳ O canal HLS demorou demais para responder."
-        );
-
-
-        return;
-    }
-
-
-    showPlayerError(
-        "❌ HLS não é suportado neste navegador."
-    );
-}
-
-
-/* =====================================================
-   DASH
-===================================================== */
-
-function playDASH(channel) {
-
-    const url =
-        channel.url;
-
-
-    setStatus(
-        "📺 Abrindo DASH..."
-    );
-
-
-    if (
-        !window.dashjs
-    ) {
-
-        showPlayerError(
-            "❌ Player DASH não carregado."
-        );
-
-        return;
-    }
-
-
-    console.log(
-        "DASH.js disponível."
-    );
-
-
-    dash =
-        dashjs.MediaPlayer()
-            .create();
-
-
-    dash.initialize(
-        video,
-        url,
-        true
-    );
-
-
-    dash.on(
-        dashjs.MediaPlayer.events
-            .STREAM_INITIALIZED,
-        () => {
-
-            console.log(
-                "✅ DASH carregado."
-            );
-
-
-            clearTimeout(
-                playerTimeout
-            );
-
-
-            setStatus(
-                "▶ " +
-                channel.name
-            );
-        }
-    );
-
-
-    dash.on(
-        dashjs.MediaPlayer.events
-            .ERROR,
-        error => {
-
-            console.error(
-                "DASH:",
-                error
-            );
-
-
-            clearTimeout(
-                playerTimeout
-            );
-
-
-            showPlayerError(
-                "❌ Este canal DASH não está disponível."
-            );
-        }
-    );
-
-
-    startTimeout(
-        "⏳ O canal DASH demorou demais para responder."
-    );
-}
-
-
-/* =====================================================
-   TIMEOUT
-===================================================== */
-
-function startTimeout(message) {
-
-    clearTimeout(
-        playerTimeout
-    );
-
-
-    playerTimeout =
-        setTimeout(
-            () => {
-
-                if (
-                    video &&
-                    video.readyState === 0
-                ) {
-
-                    showPlayerError(
-                        message
-                    );
-                }
-
-            },
-            15000
-        );
-}
-
-
-/* =====================================================
-   DESTRUIR PLAYER
-===================================================== */
-
-function destroyPlayer() {
-
-    clearTimeout(
-        playerTimeout
-    );
-
-
-    destroyHLS();
-
-
-    if (dash) {
-
-        try {
-
-            dash.reset();
-
-        } catch (e) {}
-
-        dash = null;
-    }
-
-
-    if (video) {
-
-        try {
-
-            video.pause();
-
-        } catch (e) {}
-
-
-        video.removeAttribute(
-            "src"
-        );
-
-
-        video.load();
-    }
-}
-
-
-/* =====================================================
-   DESTRUIR HLS
-===================================================== */
-
-function destroyHLS() {
-
-    if (hls) {
-
-        try {
-
-            hls.destroy();
-
-        } catch (e) {}
-
-        hls = null;
-    }
-}
-
-
-/* =====================================================
-   ERRO
-===================================================== */
-
-function showPlayerError(message) {
-
-    console.error(
-        message
-    );
-
-
-    setStatus(
-        message
-    );
-}
-
-
-/* =====================================================
-   FECHAR PLAYER
-===================================================== */
-
-if (closePlayer) {
-
-    closePlayer.addEventListener(
-        "click",
-        async () => {
-
-            await sairDaTelaCheia();
-
-
-            destroyPlayer();
-
-
-            if (playerSection) {
-
-                playerSection.classList.add(
-                    "hidden"
-                );
-
-                playerSection.style.display =
-                    "none";
-            }
-
-
-            if (nowPlaying) {
-
-                nowPlaying.textContent =
-                    "Nenhum canal";
-            }
-
-
-            setStatus(
-                "⚽ " +
-                channels.length +
-                " canais"
-            );
-        }
-    );
-}
-
 
 /* =====================================================
    FAVORITOS
@@ -1385,101 +379,341 @@ if (closePlayer) {
 
 function toggleFavorite(url) {
 
-    if (
-        favorites.includes(url)
-    ) {
+    if (favorites.includes(url)) {
 
-        favorites =
-            favorites.filter(
-                item =>
-                    item !== url
-            );
+        favorites = favorites.filter(item => item !== url);
 
     } else {
 
-        favorites.push(
-            url
-        );
+        favorites.push(url);
     }
-
 
     localStorage.setItem(
         "futiptv_favorites",
-        JSON.stringify(
-            favorites
-        )
+        JSON.stringify(favorites)
     );
-
 
     renderChannels();
 }
 
+/* =====================================================
+   PLAYER
+===================================================== */
+
+function playChannel(channel) {
+
+    if (!video || !channel.url) return;
+
+    destroyPlayer();
+
+    if (playerSection) {
+        playerSection.classList.remove("hidden");
+        playerSection.style.display = "block";
+    }
+
+    if (nowPlaying) {
+        nowPlaying.textContent = "▶ " + channel.name;
+    }
+
+    const url = channel.url.toLowerCase();
+
+    const isDASH =
+        url.includes(".mpd") ||
+        url.includes("manifest.mpd");
+
+    const isHLS =
+        url.includes(".m3u8") ||
+        url.includes("hls");
+
+    if (isDASH) {
+        playDASH(channel);
+    } else if (isHLS) {
+        playHLS(channel);
+    } else {
+        playDirect(channel);
+    }
+}
+
+/* =====================================================
+   HLS
+===================================================== */
+
+function playHLS(channel) {
+
+    setStatus("📺 Abrindo HLS...");
+
+    if (window.Hls && Hls.isSupported()) {
+
+        hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 30
+        });
+
+        hls.loadSource(channel.url);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+
+            clearTimeout(playerTimeout);
+
+            setStatus("▶ " + channel.name);
+
+            video.play().catch(() => {
+                setStatus("▶ Toque em Play");
+            });
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+
+            console.error("HLS:", data);
+
+            if (data.fatal) {
+
+                destroyHLS();
+
+                showPlayerError("❌ Falha na transmissão HLS.");
+            }
+        });
+
+        startTimeout("⏳ O canal HLS demorou demais para responder.");
+
+        return;
+    }
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+
+        video.src = channel.url;
+
+        video.play().catch(() => {
+            setStatus("▶ Toque em Play");
+        });
+
+        startTimeout("⏳ O canal HLS demorou demais para responder.");
+
+        return;
+    }
+
+    showPlayerError("❌ HLS não suportado.");
+}
+
+/* =====================================================
+   DASH
+===================================================== */
+
+function playDASH(channel) {
+
+    if (!window.dashjs) {
+        showPlayerError("❌ DASH.js não carregado.");
+        return;
+    }
+
+    setStatus("📺 Abrindo DASH...");
+
+    dash = dashjs.MediaPlayer().create();
+
+    dash.initialize(video, channel.url, true);
+
+    dash.on(
+        dashjs.MediaPlayer.events.STREAM_INITIALIZED,
+        () => {
+            clearTimeout(playerTimeout);
+            setStatus("▶ " + channel.name);
+        }
+    );
+
+    dash.on(
+        dashjs.MediaPlayer.events.ERROR,
+        error => {
+            console.error("DASH:", error);
+            showPlayerError("❌ Falha na transmissão DASH.");
+        }
+    );
+
+    startTimeout("⏳ O canal DASH demorou demais para responder.");
+}
+
+/* =====================================================
+   TRANSMISSÃO DIRETA
+===================================================== */
+
+function playDirect(channel) {
+
+    setStatus("📺 Abrindo transmissão direta...");
+
+    video.src = channel.url;
+
+    video.play().catch(() => {
+        setStatus("▶ Toque em Play");
+    });
+
+    startTimeout("⏳ A transmissão demorou demais para responder.");
+}
+
+/* =====================================================
+   TIMEOUT
+===================================================== */
+
+function startTimeout(message) {
+
+    clearTimeout(playerTimeout);
+
+    playerTimeout = setTimeout(() => {
+
+        if (video && video.readyState === 0) {
+            showPlayerError(message);
+        }
+
+    }, 15000);
+}
+
+/* =====================================================
+   DESTRUIR PLAYER
+===================================================== */
+
+function destroyHLS() {
+
+    if (hls) {
+        hls.destroy();
+        hls = null;
+    }
+}
+
+function destroyPlayer() {
+
+    clearTimeout(playerTimeout);
+
+    destroyHLS();
+
+    if (dash) {
+        try {
+            dash.reset();
+        } catch (error) {
+            console.error(error);
+        }
+
+        dash = null;
+    }
+
+    if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+    }
+}
+
+/* =====================================================
+   ERRO
+===================================================== */
+
+function showPlayerError(message) {
+    console.error(message);
+    setStatus(message);
+}
+
+/* =====================================================
+   FULLSCREEN
+===================================================== */
+
+async function ativarTelaCheia() {
+
+    if (!video) return;
+
+    try {
+
+        if (typeof video.webkitEnterFullscreen === "function") {
+            video.webkitEnterFullscreen();
+            return;
+        }
+
+        if (playerContainer?.requestFullscreen) {
+            await playerContainer.requestFullscreen();
+            return;
+        }
+
+        if (video.requestFullscreen) {
+            await video.requestFullscreen();
+        }
+
+    } catch (error) {
+        console.error("Fullscreen:", error);
+    }
+}
+
+async function sairDaTelaCheia() {
+
+    try {
+
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", ativarTelaCheia);
+}
+
+document.addEventListener("fullscreenchange", () => {
+
+    if (fullscreenBtn) {
+        fullscreenBtn.textContent = "⛶";
+    }
+});
+
+/* =====================================================
+   FECHAR PLAYER
+===================================================== */
+
+if (closePlayer) {
+
+    closePlayer.addEventListener("click", async () => {
+
+        await sairDaTelaCheia();
+
+        destroyPlayer();
+
+        if (playerSection) {
+            playerSection.classList.add("hidden");
+            playerSection.style.display = "none";
+        }
+
+        if (nowPlaying) {
+            nowPlaying.textContent = "Nenhum canal";
+        }
+
+        setStatus(`⚽ ${channels.length} canais`);
+    });
+}
 
 /* =====================================================
    PESQUISA
 ===================================================== */
 
 if (searchInput) {
-
-    searchInput.addEventListener(
-        "input",
-        renderChannels
-    );
+    searchInput.addEventListener("input", renderChannels);
 }
 
-
 /* =====================================================
-   RECARREGAR
+   ATUALIZAR
 ===================================================== */
 
 if (reloadBtn) {
 
-    reloadBtn.addEventListener(
-        "click",
-        () => {
+    reloadBtn.addEventListener("click", () => {
 
-            destroyPlayer();
+        const savedURL = localStorage.getItem(SAVED_PLAYLIST_KEY);
 
+        if (savedURL) {
+            importPlaylist(savedURL);
+        } else {
             loadPlaylist();
         }
-    );
+    });
 }
-
-
-/* =====================================================
-   SEGURANÇA
-===================================================== */
-
-function escapeHTML(text) {
-
-    return String(text)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
-
 
 /* =====================================================
    INICIAR
