@@ -80,6 +80,7 @@
             text-align: center;
             text-decoration: none;
             transition: transform .15s ease, opacity .15s ease;
+            cursor: pointer;
         }
 
         .apps-contact-btn:active {
@@ -117,12 +118,13 @@
 
         <!-- CONTATO PLAYLIST DE CANAIS -->
 
-        <a
-    href="https://mail.google.com/mail/?view=cm&fs=1&to=plutogames.ofc@gmail.com&su=Solicita%C3%A7%C3%A3o%20de%20Playlist%20de%20Canais"
-    class="apps-contact-btn"
->
-    📩 Precisa da Playlist de Canais? Entre em contato aqui
-</a>
+        <button
+            type="button"
+            class="apps-contact-btn"
+            onclick="copiarEmailCanais()"
+        >
+            📩 Precisa da Playlist de Canais? Entre em contato aqui
+        </button>
 
         <div class="import-controls">
 
@@ -235,6 +237,50 @@
     <p>FutIPTV · 1.3.0</p>
     <small>Multi-Player Engine</small>
 </footer>
+
+<!-- COPIAR E-MAIL DE CONTATO -->
+
+<script>
+async function copiarEmailCanais() {
+    const email = "plutogames.ofc@gmail.com";
+
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(email);
+        } else {
+            const campo = document.createElement("textarea");
+
+            campo.value = email;
+            campo.style.position = "fixed";
+            campo.style.opacity = "0";
+
+            document.body.appendChild(campo);
+            campo.focus();
+            campo.select();
+
+            const sucesso = document.execCommand("copy");
+            campo.remove();
+
+            if (!sucesso) {
+                throw new Error("Não foi possível copiar.");
+            }
+        }
+
+        alert(
+            "✅ E-mail copiado com sucesso!\n\n" +
+            "Abra seu aplicativo de e-mail e entre em contato:\n" +
+            email
+        );
+
+    } catch (erro) {
+        alert(
+            "E-mail para contato:\n\n" +
+            email +
+            "\n\nCopie esse endereço manualmente."
+        );
+    }
+}
+</script>
 
 <!-- APLICAÇÃO -->
 
