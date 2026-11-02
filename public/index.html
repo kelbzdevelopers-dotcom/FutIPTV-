@@ -69,6 +69,36 @@
         .channel button {
             cursor: pointer;
         }
+
+        /* BOTÃO DE CONTATO PLAYLIST DE APPS */
+
+        .apps-contact-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 46px;
+            box-sizing: border-box;
+            padding: 12px;
+            margin-bottom: 12px;
+
+            background: linear-gradient(135deg, #1769ff, #703cff);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 11px;
+
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+
+            transition: transform .15s ease, opacity .15s ease;
+        }
+
+        .apps-contact-btn:active {
+            transform: scale(.97);
+            opacity: .85;
+        }
     </style>
 </head>
 
@@ -97,7 +127,6 @@
 
     </header>
 
-
     <main>
 
         <!-- IMPORTAÇÃO DE PLAYLIST -->
@@ -109,6 +138,15 @@
             <p>
                 Importe sua playlist M3U por URL.
             </p>
+
+            <!-- CONTATO PLAYLIST DE APPS -->
+
+            <a
+                href="mailto:plutogames.ofc@gmail.com?subject=Solicitação%20de%20Playlist%20de%20APPS"
+                class="apps-contact-btn"
+            >
+                📩 Precisa da Playlist de APPS? Entre em contato aqui
+            </a>
 
             <div class="import-controls">
 
@@ -139,7 +177,6 @@
 
         </section>
 
-
         <!-- PESQUISA -->
 
         <section class="search-area">
@@ -153,7 +190,6 @@
             >
 
         </section>
-
 
         <!-- CATEGORIAS -->
 
@@ -172,7 +208,6 @@
             </button>
 
         </nav>
-
 
         <!-- PLAYER -->
 
@@ -196,7 +231,6 @@
                 ></video>
 
             </div>
-
 
             <div class="player-info">
 
@@ -222,7 +256,6 @@
 
         </section>
 
-
         <!-- LISTA DE CANAIS -->
 
         <section class="channels-section">
@@ -237,7 +270,6 @@
 
             </div>
 
-
             <!-- STATUS -->
 
             <p
@@ -248,13 +280,11 @@
                 Importe uma playlist para começar.
             </p>
 
-
             <!-- CARREGAMENTO -->
 
             <div id="loading" hidden>
                 <p>⏳ Carregando canais...</p>
             </div>
-
 
             <!-- CANAIS -->
 
@@ -262,7 +292,6 @@
                 id="canais"
                 class="channels-grid"
             ></div>
-
 
             <!-- ESTADO VAZIO -->
 
@@ -280,7 +309,6 @@
 
     </main>
 
-
     <!-- RODAPÉ -->
 
     <footer>
@@ -294,7 +322,6 @@
         </small>
 
     </footer>
-
 
     <!-- APLICAÇÃO -->
 
